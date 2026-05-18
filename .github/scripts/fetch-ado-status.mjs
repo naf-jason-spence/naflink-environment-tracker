@@ -26,7 +26,14 @@ fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
 fs.writeFileSync(OUTPUT, JSON.stringify({ generatedAt: null, latestBuild: null }, null, 2));
 
 if (!ADO_PAT || !ADO_ORG || !ADO_PROJECT || !ADO_PIPELINE_NAME) {
-  console.error('Missing required env vars: ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_PIPELINE_NAME');
+  const missing = ['ADO_PAT', 'ADO_ORG', 'ADO_PROJECT', 'ADO_PIPELINE_NAME']
+    .filter(k => !process.env[k]);
+  console.error('Missing required env vars:', missing.join(', '));
+  fs.writeFileSync(OUTPUT, JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    latestBuild: null,
+    fetchError: `Missing env vars: ${missing.join(', ')}`,
+  }, null, 2));
   process.exit(1);
 }
 
