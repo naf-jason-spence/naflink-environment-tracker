@@ -158,11 +158,19 @@ async function main() {
       const sourceBranch = buildData
         ? (buildData.sourceBranch ?? '').replace(/^refs\/heads\//, '')
         : '';
+      // requestedFor / finishedOn are often absent on env deployment records for
+      // pipeline-triggered runs — fall back to the build record which always has them.
+      const deployedBy = record.requestedFor?.displayName
+        || buildData?.requestedFor?.displayName
+        || '';
+      const finishTime = record.finishedOn
+        || buildData?.finishTime
+        || null;
       environments[env.name] = {
         sourceBranch,
-        deployedBy:  record.requestedFor?.displayName ?? '',
+        deployedBy,
         status:      record.result ?? 'unknown',
-        finishTime:  record.finishedOn ?? null,
+        finishTime,
         buildNumber: record.owner?.name ?? '',
         releaseId:   record.owner?.id ?? null,
         releaseName: record.owner?.name ?? null,
