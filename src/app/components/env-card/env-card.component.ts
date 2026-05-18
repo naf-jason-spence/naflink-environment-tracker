@@ -19,7 +19,7 @@ import { EnvironmentService } from '../../services/environment.service';
 })
 export class EnvCardComponent {
   readonly env = input.required<Environment>();
-  private envService = inject(EnvironmentService);
+  private readonly envService = inject(EnvironmentService);
 
   onCommit(field: 'branchOrRepo' | 'lockedBy' | 'notes', raw: string): void {
     const value = raw.trim();

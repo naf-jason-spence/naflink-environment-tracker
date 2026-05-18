@@ -1,0 +1,403 @@
+@use '../../../styles/functions' as *;
+
+// ── Backdrop ──────────────────────────────────────────────────────────────────
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  animation: fade-in 0.15s ease;
+}
+
+// ── Panel ─────────────────────────────────────────────────────────────────────
+.settings-panel {
+  position: fixed;
+  top: toRem(64);   // sits flush below the sticky header
+  right: 1.75rem;
+  z-index: 201;
+  width: toRem(420);
+  max-height: calc(100vh - toRem(80));
+  overflow-y: auto;
+  background: #fff;
+  border-radius: toRem(12);
+  box-shadow: 0 toRem(8) toRem(40) rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  animation: slide-down 0.18s ease;
+}
+
+// ── Header row ────────────────────────────────────────────────────────────────
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.9rem;
+  border-bottom: toRem(1) solid #e8ecf0;
+}
+
+.settings-title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0d1b3e;
+
+  svg { flex-shrink: 0; color: #1e3a7a; }
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: toRem(28);
+  height: toRem(28);
+  border: none;
+  background: transparent;
+  border-radius: toRem(6);
+  color: #7a8a9e;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: #f0f3f7; color: #0d1b3e; }
+}
+
+// ── Body ──────────────────────────────────────────────────────────────────────
+.settings-body {
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+}
+
+.settings-section { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7a8a9e;
+  margin: 0;
+}
+
+.section-hint {
+  font-size: 0.75rem;
+  color: #8898a8;
+  line-height: 1.5;
+  margin: 0;
+
+  code {
+    font-family: 'Courier New', monospace;
+    background: #f0f3f7;
+    padding: 0.1em 0.35em;
+    border-radius: toRem(4);
+    font-size: 0.9em;
+  }
+}
+
+// ── Field row ─────────────────────────────────────────────────────────────────
+.field-row { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #3a4a5c;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.field-hint {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #8898a8;
+}
+
+.field-input {
+  padding: 0.45rem 0.65rem;
+  border: toRem(1) solid #d0d9e4;
+  border-radius: toRem(7);
+  font-size: 0.82rem;
+  color: #1a2a3a;
+  background: #fafbfc;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+
+  &::placeholder { color: #b0bbc8; }
+  &:focus {
+    border-color: #1e3a7a;
+    box-shadow: 0 0 0 toRem(3) rgba(30, 58, 122, 0.12);
+    background: #fff;
+  }
+}
+
+// ── Mapping table ─────────────────────────────────────────────────────────────
+.mapping-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  th {
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #7a8a9e;
+    padding: 0 0.4rem 0.5rem;
+    border-bottom: toRem(1) solid #e8ecf0;
+  }
+
+  td {
+    padding: 0.35rem 0.4rem;
+    vertical-align: middle;
+    border-bottom: toRem(1) solid #f0f3f7;
+  }
+
+  tr:last-child td { border-bottom: none; }
+}
+
+.env-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: toRem(5);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+
+  &--qa  { background: #e8f0ff; color: #1e3a7a; }
+  &--uat { background: #fff0e8; color: #7a3a1e; }
+}
+
+.id-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  border: toRem(1) solid #d0d9e4;
+  border-radius: toRem(6);
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+  color: #1a2a3a;
+  background: #fafbfc;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &::placeholder { color: #c0cbd8; }
+  &:focus { border-color: #1e3a7a; background: #fff; }
+
+  // Remove number spinners for a cleaner look
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  -moz-appearance: textfield;
+}
+
+// ── Footer ────────────────────────────────────────────────────────────────────
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.9rem 1.25rem 1rem;
+  border-top: toRem(1) solid #e8ecf0;
+}
+
+.btn-secondary {
+  padding: 0.4rem 0.9rem;
+  border: toRem(1) solid #d0d9e4;
+  border-radius: toRem(7);
+  background: transparent;
+  color: #4a5a6a;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: #f0f3f7; }
+}
+
+.btn-primary {
+  padding: 0.4rem 1.1rem;
+  border: none;
+  border-radius: toRem(7);
+  background: #1e3a7a;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: #162d5e; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+// ── Animations ────────────────────────────────────────────────────────────────
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ── Environment tag row (pipeline mapping preview) ────────────────────────────
+.env-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.pipeline-resolved {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  background: #e6f4ea;
+  border: toRem(1) solid #b7dfbf;
+  border-radius: toRem(7);
+  color: #1a6132;
+
+  svg { flex-shrink: 0; }
+
+  &__name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__tag {
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+}
+
+// ── Discovery section ─────────────────────────────────────────────────────────
+.settings-section--discover {
+  padding: 0.65rem 0.85rem;
+  background: #f5f8ff;
+  border: toRem(1) solid #d8e3f8;
+  border-radius: toRem(8);
+  gap: 0;
+}
+
+.discover-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.discover-status {
+  flex: 1;
+  min-width: 0;
+}
+
+.discover-hint {
+  font-size: 0.74rem;
+  color: #7a8a9e;
+  line-height: 1.4;
+}
+
+.discover-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 500;
+  padding: 0.2rem 0.55rem;
+  border-radius: toRem(5);
+
+  &--loading {
+    background: #e8f0ff;
+    color: #1e3a7a;
+  }
+
+  &--ok {
+    background: #e6f4ea;
+    color: #1a6132;
+  }
+
+  &--error {
+    background: #fdecea;
+    color: #8b1a1a;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.35;
+  }
+}
+
+.btn-discover {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.38rem 0.9rem;
+  border: toRem(1) solid #1e3a7a;
+  border-radius: toRem(7);
+  background: #fff;
+  color: #1e3a7a;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: #1e3a7a;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: #aab5c8;
+    color: #7a8a9e;
+  }
+}
+
+// ── Pipeline / stage selects ──────────────────────────────────────────────────
+.id-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  border: toRem(1) solid #d0d9e4;
+  border-radius: toRem(6);
+  font-size: 0.78rem;
+  color: #1a2a3a;
+  background: #fafbfc;
+  outline: none;
+  cursor: pointer;
+  appearance: auto;
+  transition: border-color 0.15s;
+
+  &:focus { border-color: #1e3a7a; background: #fff; }
+}
+
+.select-placeholder {
+  font-size: 0.72rem;
+  color: #aab5c8;
+  font-style: italic;
+  display: block;
+  padding: 0.35rem 0.5rem;
+}
+
+// ── Spinner ───────────────────────────────────────────────────────────────────
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+

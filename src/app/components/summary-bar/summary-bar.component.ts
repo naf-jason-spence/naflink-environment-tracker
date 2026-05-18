@@ -1,4 +1,8 @@
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  inject,
+} from '@angular/core';
+
 import { EnvironmentService } from '../../services/environment.service';
 
 @Component({
@@ -8,7 +12,7 @@ import { EnvironmentService } from '../../services/environment.service';
   styleUrl: './summary-bar.component.scss',
 })
 export class SummaryBarComponent {
-  envService = inject(EnvironmentService);
+  protected readonly envService = inject(EnvironmentService);
 
   occupiedPercent(): number {
     const total = this.envService.total();

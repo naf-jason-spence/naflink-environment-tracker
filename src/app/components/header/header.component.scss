@@ -50,6 +50,54 @@
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sync-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.25rem 0.6rem;
+  border-radius: toRem(20);
+
+  &--loading { color: rgba(255,255,255,0.7); }
+  &--error   { background: rgba(239,68,68,0.15); color: #f87171; }
+  &--ok      { background: rgba(34,197,94,0.15); color: #4ade80; }
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: toRem(32);
+  height: toRem(32);
+  border: toRem(1) solid rgba(255, 255, 255, 0.18);
+  border-radius: toRem(7);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &--active {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
 .reset-btn {
   display: flex;
   align-items: center;
@@ -71,3 +119,10 @@
     background: rgba(239, 68, 68, 0.1);
   }
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin { animation: spin 0.9s linear infinite; }
+

@@ -1,0 +1,148 @@
+<!-- Backdrop — click outside to dismiss -->
+<div class="settings-backdrop" (click)="onClose()"></div>
+
+<!-- Panel — stop propagation so backdrop click only fires on the backdrop itself -->
+<div class="settings-panel" (click)="$event.stopPropagation()">
+
+  <!-- ── Header ── -->
+  <div class="settings-head">
+    <div class="settings-title-area">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>ADO Settings</span>
+    </div>
+    <button class="close-btn" (click)="onClose()" title="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── Body ── -->
+  <div class="settings-body">
+
+    <!-- Connection -->
+    <section class="settings-section">
+      <h3 class="section-title">Connection</h3>
+
+      <div class="field-row">
+        <label class="field-label" for="ado-org">Organization</label>
+        <input
+          id="ado-org"
+          class="field-input"
+          type="text"
+          autocomplete="off"
+          placeholder="my-org"
+          [value]="org()"
+          (input)="org.set($any($event.target).value)"
+        />
+      </div>
+
+      <div class="field-row">
+        <label class="field-label" for="ado-project">Project</label>
+        <input
+          id="ado-project"
+          class="field-input"
+          type="text"
+          autocomplete="off"
+          placeholder="my-project"
+          [value]="project()"
+          (input)="project.set($any($event.target).value)"
+        />
+      </div>
+
+      <div class="field-row">
+        <label class="field-label" for="ado-pat">
+          Personal Access Token
+          <span class="field-hint">Scope: Release (read) · Cleared when tab closes</span>
+        </label>
+        <input
+          id="ado-pat"
+          class="field-input"
+          type="password"
+          autocomplete="off"
+          placeholder="Leave blank to keep existing token"
+          [value]="pat()"
+          (input)="pat.set($any($event.target).value)"
+        />
+      </div>
+    </section>
+
+    <!-- Pipeline Discovery -->
+    <section class="settings-section settings-section--discover">
+      <div class="discover-row">
+        <div class="discover-status">
+          @if (pipelinesLoading()) {
+            <span class="discover-badge discover-badge--loading">
+              <svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              Loading&hellip;
+            </span>
+          } @else if (pipelinesError()) {
+            <span class="discover-badge discover-badge--error">
+              ✕ {{ pipelinesError() }}
+            </span>
+          } @else if (pipelines().length) {
+            <span class="discover-badge discover-badge--ok">
+              ✓ {{ pipelines().length }} pipeline{{ pipelines().length === 1 ? '' : 's' }} loaded
+            </span>
+          } @else {
+            <span class="discover-hint">Enter credentials above, then load pipelines to pick from a list.</span>
+          }
+        </div>
+
+        <button
+          class="btn-discover"
+          [disabled]="!canLoadPipelines() || pipelinesLoading()"
+          (click)="loadPipelines()"
+          title="Fetch release pipeline definitions from ADO"
+        >
+          @if (pipelinesLoading()) {
+            <svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          }
+          Load Pipelines
+        </button>
+      </div>
+    </section>
+
+    <!-- Mappings -->
+    <section class="settings-section">
+      <h3 class="section-title">Pipeline Mappings</h3>
+
+      @if (sharedPipelineId()) {
+        <div class="pipeline-resolved">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span class="pipeline-resolved__name">
+            {{ getSelectedPipelineName() || sharedPipelineId() }}
+          </span>
+          <span class="pipeline-resolved__tag">all environments</span>
+        </div>
+        <div class="env-tag-row">
+          @for (env of environments(); track env.id) {
+            <span class="env-chip" [class]="'env-chip--' + env.group">{{ env.name }}</span>
+          }
+        </div>
+      } @else if (!pipelinesLoading()) {
+        <p class="section-hint">Load pipelines above — the pipeline will be detected automatically.</p>
+      }
+    </section>
+
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="settings-footer">
+    <button class="btn-secondary" (click)="onClose()">Cancel</button>
+    <button
+      class="btn-primary"
+      (click)="onSave()"
+      [disabled]="!canSave()"
+    >
+      Save &amp; Close
+    </button>
+  </div>
+
+</div>
+

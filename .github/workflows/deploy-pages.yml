@@ -1,6 +1,8 @@
 name: Deploy Angular to GitHub Pages
 
 on:
+  schedule:
+    - cron: '*/10 * * * *'   # Refresh ADO build status every 10 minutes
   push:
     branches:
       - develop
@@ -14,6 +16,11 @@ permissions:
 concurrency:
   group: pages
   cancel-in-progress: true
+
+env:
+  ADO_ORG: NAF-Tech
+  ADO_PROJECT: LenderLink.Web
+  ADO_PIPELINE_NAME: naflink-web-release-pipeline
 
 jobs:
   build:
@@ -33,6 +40,12 @@ jobs:
 
       - name: Build app
         run: npx ng build --configuration production --base-href /naflink-environment-tracker/
+
+      - name: Fetch ADO build status
+        env:
+          ADO_PAT: ${{ secrets.ADO_PAT }}
+        run: node .github/scripts/fetch-ado-status.mjs
+        continue-on-error: true   # never block deployment if ADO is unreachable
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
