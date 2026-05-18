@@ -29,5 +29,10 @@ export interface Environment {
   adoDeployedBy?: string;
   /** ISO timestamp of when the deployment to this environment started. */
   adoStartedOn?: string | null;
+  /**
+   * ISO timestamp set when a user manually marks this env as free.
+   * Cleared automatically when a newer ADO deployment arrives on sync.
+   */
+  freedAt?: string | null;
 }
 

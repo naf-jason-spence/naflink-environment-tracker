@@ -2,10 +2,12 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  inject,
   input,
 } from '@angular/core';
 
 import { Environment } from '../../models/environment.model';
+import { EnvironmentService } from '../../services/environment.service';
 
 @Component({
   selector: 'app-env-card',
@@ -17,4 +19,10 @@ import { Environment } from '../../models/environment.model';
 })
 export class EnvCardComponent {
   readonly env = input.required<Environment>();
+
+  private readonly envService = inject(EnvironmentService);
+
+  markFree(): void {
+    this.envService.markAsFree(this.env().id);
+  }
 }

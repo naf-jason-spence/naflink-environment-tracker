@@ -133,6 +133,28 @@
   }
 }
 
+/* -- Mark as Free button -- */
+.btn-free {
+  display: inline-flex;
+  align-items: center;
+  gap: toRem(5);
+  font-size: toRem(11);
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: toRem(1) solid #86efac;
+  border-radius: toRem(6);
+  padding: toRem(3) toRem(9);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+  }
+}
+
 /* -- Footer -- */
 .card-footer {
   display: flex;

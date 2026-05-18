@@ -141,11 +141,35 @@ export class EnvironmentService {
     });
   }
 
+  markAsFree(envId: string): void {
+    this.environments.update(envs =>
+      envs.map(env =>
+        env.id !== envId ? env : {
+          ...env,
+          status:              'free' as const,
+          freedAt:             new Date().toISOString(),
+          branchOrRepo:        '',
+          lockedBy:            '',
+          adoReleaseId:        undefined,
+          adoReleaseName:      undefined,
+          adoBuildNumber:      undefined,
+          adoDeploymentStatus: undefined,
+          adoDeployedBy:       undefined,
+          adoStartedOn:        undefined,
+          lastUpdated:         new Date().toISOString(),
+        }
+      )
+    );
+  }
+
   private applyAdoBuilds(buildMap: Map<string, AdoBuildSummary>): void {
     this.environments.update(envs =>
       envs.map(env => {
         const build = buildMap.get(env.id);
         if (!build) return env;
+
+        // If the user manually freed this env after the last ADO deployment, keep it free.
+        if (env.freedAt && build.startTime && build.startTime <= env.freedAt) return env;
 
         // Map build status/result to the shared AdoDeploymentStatus vocabulary
         let deployStatus: 'inProgress' | 'succeeded' | 'partiallySucceeded' | 'failed' | 'notDeployed';
@@ -166,6 +190,7 @@ export class EnvironmentService {
           branchOrRepo:        build.sourceBranch,
           lockedBy:            build.requestedFor,
           status:              (build.sourceBranch || build.requestedFor) ? 'occupied' : env.status,
+          freedAt:             null,
           adoReleaseId:        build.buildId,
           adoReleaseName:      build.definitionName,
           adoBuildNumber:      build.buildNumber,
@@ -186,11 +211,15 @@ export class EnvironmentService {
         const release = deployMap.get(env.id);
         if (!release) return env;
 
+        // If the user manually freed this env after the last ADO deployment, keep it free.
+        if (env.freedAt && release.startedOn && release.startedOn <= env.freedAt) return env;
+
         return {
           ...env,
           branchOrRepo:        release.sourceBranch,
           lockedBy:            release.deployedBy,
           status:              (release.sourceBranch || release.deployedBy) ? 'occupied' : env.status,
+          freedAt:             null,
           adoReleaseId:        release.releaseId,
           adoReleaseName:      release.releaseName,
           adoBuildNumber:      release.buildNumber,
