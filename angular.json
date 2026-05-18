@@ -44,6 +44,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/naflink-environment-tracker/",
               "budgets": [
                 {
                   "type": "initial",
