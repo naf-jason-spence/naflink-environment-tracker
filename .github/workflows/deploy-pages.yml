@@ -40,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Build app
-        run: npx ng build --configuration production --base-href /naflink-environment-tracker/
+        run: npx ng build --configuration production
 
       - name: Fetch ADO build status
         env:
