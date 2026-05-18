@@ -100,5 +100,7 @@ async function main() {
 
 main().catch(err => {
   console.error('fetch-ado-status failed:', err.message);
+  // Write the error into the JSON so it's visible at the URL without needing workflow logs.
+  fs.writeFileSync(OUTPUT, JSON.stringify({ generatedAt: new Date().toISOString(), latestBuild: null, fetchError: err.message }, null, 2));
   process.exit(1);
 });
