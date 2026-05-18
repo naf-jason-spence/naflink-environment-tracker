@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/app.scss"],
+  "sourcesContent": [".main {\n  max-width: 1200px;\n  margin: 0 auto;\n  padding: 1.75rem 2rem;\n}\n.grid {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 1.1rem;\n}\n@media (max-width: 700px) {\n  .grid { grid-template-columns: 1fr; }\n  .main { padding: 1rem; }\n}\n"],
+  "mappings": ";AAAA,CAAA;AACE,aAAA;AACA,UAAA,EAAA;AACA,WAAA,QAAA;;AAEF,CAAA;AACE,WAAA;AACA,yBAAA,OAAA,CAAA,EAAA;AACA,OAAA;;AAEF,QAAA,WAAA;AACE,GANF;AAMU,2BAAA;;AACR,GAZF;AAYU,aAAA;;;",
+  "names": []
+}

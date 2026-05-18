@@ -1,0 +1,44 @@
+@use '../../../styles/functions' as *;
+
+.summary-bar {
+  background: linear-gradient(135deg, #0d1b3e 0%, #1e3a7a 100%);
+  border-bottom: toRem(1) solid rgba(255, 255, 255, 0.08);
+  padding: 0.6rem 1.75rem;
+}
+
+.summary-inner {
+  max-width: toRem(1200);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.summary-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.stat { font-weight: 500; }
+.occupied { color: #f97316; }
+.free { color: #22c55e; }
+.total { color: rgba(255, 255, 255, 0.35); font-weight: 400; }
+.divider { color: rgba(255, 255, 255, 0.2); }
+
+.progress-bar-wrap {
+  flex: 1;
+  height: toRem(4);
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: toRem(99);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #f97316;
+  border-radius: toRem(99);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
