@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 /**
- * Fetches the latest build from Azure DevOps and writes docs/ado-status.json.
+ * Fetches ADO environment deployment records and writes docs/ado-status.json.
  * Called by the GitHub Actions deploy workflow after `ng build`.
  *
  * Required environment variables (set in the workflow):
- *   ADO_PAT           – Personal Access Token  (Build: read scope)
- *   ADO_ORG           – ADO organization name  (e.g. NAF-Tech)
- *   ADO_PROJECT       – ADO project name       (e.g. LenderLink.Web)
- *   ADO_PIPELINE_NAME – Build pipeline name    (e.g. naflink-web-release-pipeline)
+ *   ADO_PAT           – Personal Access Token (Build: read + Environment: read)
+ *   ADO_ORG           – ADO organization name (e.g. NAF-Tech)
+ *   ADO_PROJECT       – ADO project name      (e.g. LenderLink.Web)
+ *   ADO_PIPELINE_NAME – Release pipeline name (e.g. naflink-web-release-pipeline)
+ *
+ * Per-environment branch data comes from the ADO Environments Deployment Records
+ * API (_apis/distributedtask/environments). This is accurate for YAML pipelines
+ * that declare `environment:` on each deployment job (QA, QA2 … UAT2).
  */
 
 import fs from 'fs';
@@ -84,69 +88,83 @@ async function main() {
   const builds = await get(buildsUrl);
   const build  = builds.value?.[0] ?? null;
 
-  // 3. Get per-environment deployment state from build stage timelines.
-  //    We look at the last N completed builds and, for each Stage record in
-  //    the timeline, record the most recent result for that stage name.
-  //    This works for YAML multi-stage pipelines where each stage targets one
-  //    environment (e.g. "Deploy QA3", "Deploy UAT", etc.).
-  const stageLatest = {}; // stageName → { sourceBranch, deployedBy, status, finishTime, buildNumber }
+  // 3. Per-environment data via the ADO Environments Deployment Records API.
+  //    The YAML pipeline declares `environment: 'QA3'` etc. on each deployment
+  //    job, so ADO records every deployment against that named environment.
+  //    Each record links to the build run → we fetch the build to get sourceBranch.
+  const environments = {};
 
   try {
-    const recentBuildsUrl =
+    // 3a. List all environments in the project
+    const envsUrl =
       `https://dev.azure.com/${ADO_ORG}/${encodedProject}` +
-      `/_apis/build/builds?definitions=${def.id}&$top=50&statusFilter=completed&api-version=7.1`;
-    const recentBuildsData = await get(recentBuildsUrl);
-    const recentBuilds = recentBuildsData.value ?? [];
+      `/_apis/distributedtask/environments?api-version=7.1`;
+    const envsData = await get(envsUrl);
+    const envList  = envsData.value ?? [];
 
-    console.log(`Fetching timelines for ${recentBuilds.length} recent builds…`);
+    console.log(`Found ${envList.length} ADO environments: ${envList.map(e => e.name).join(', ')}`);
 
-    // Fetch all timelines in parallel for speed
-    const timelineResults = await Promise.all(
-      recentBuilds.map(b =>
+    // Only fetch the environments our tracker cares about
+    const trackedNames = new Set(['Dev', 'QA', 'QA2', 'QA3', 'QA4', 'QA5', 'UAT', 'UAT2', 'Staging']);
+    const relevant = envList.filter(e => trackedNames.has(e.name));
+
+    // 3b. Fetch the latest deployment record for each relevant environment
+    const recordResults = await Promise.all(
+      relevant.map(env =>
         get(
           `https://dev.azure.com/${ADO_ORG}/${encodedProject}` +
-          `/_apis/build/builds/${b.id}/timeline?api-version=7.1`,
+          `/_apis/distributedtask/environments/${env.id}/environmentdeploymentrecords` +
+          `?top=1&api-version=7.1`,
         )
-          .then(tl => ({ b, tl }))
-          .catch(() => null),
+          .then(data => ({ env, record: data.value?.[0] ?? null }))
+          .catch(err => {
+            console.warn(`Could not fetch records for '${env.name}': ${err.message}`);
+            return { env, record: null };
+          }),
       ),
     );
 
-    for (const entry of timelineResults) {
-      if (!entry) continue;
-      const { b, tl } = entry;
-      const sourceBranch = (b.sourceBranch ?? '').replace(/^refs\/heads\//, '');
-      const deployedBy   = b.requestedFor?.displayName ?? '';
+    // 3c. Collect unique build IDs so we can fetch sourceBranch in one batch
+    const buildIds = [
+      ...new Set(recordResults.filter(r => r.record?.owner?.id).map(r => r.record.owner.id)),
+    ];
+    console.log(`Fetching ${buildIds.length} unique builds for source branches…`);
 
-      for (const rec of tl.records ?? []) {
-        if (rec.type !== 'Stage') continue;
-        if (rec.state !== 'completed') continue;
-        const result = rec.result;
-        if (!result || result === 'skipped' || result === 'abandoned') continue;
+    const buildMap = new Map();
+    await Promise.all(
+      buildIds.map(id =>
+        get(
+          `https://dev.azure.com/${ADO_ORG}/${encodedProject}` +
+          `/_apis/build/builds/${id}?api-version=7.1`,
+        )
+          .then(b => buildMap.set(id, b))
+          .catch(err => console.warn(`Could not fetch build ${id}: ${err.message}`)),
+      ),
+    );
 
-        const stageName   = rec.name;
-        const finishTime  = rec.finishTime ?? b.finishTime;
-
-        if (
-          !stageLatest[stageName] ||
-          new Date(finishTime) > new Date(stageLatest[stageName].finishTime)
-        ) {
-          stageLatest[stageName] = {
-            sourceBranch,
-            deployedBy,
-            status:      result,          // succeeded | failed | partiallySucceeded
-            finishTime:  finishTime ?? new Date().toISOString(),
-            buildNumber: b.buildNumber,
-            releaseId:   b.id,
-            releaseName: b.buildNumber,
-          };
-        }
-      }
+    // 3d. Compose the environments output keyed by ADO environment name
+    //     ('QA', 'QA2', 'QA3' …). The Angular service normalises these to match
+    //     card names ('QA' → 'qa' matches env.name 'QA'; 'QA3' → 'qa3' matches 'QA3').
+    for (const { env, record } of recordResults) {
+      if (!record) continue;
+      const buildData    = record.owner?.id ? buildMap.get(record.owner.id) : null;
+      const sourceBranch = buildData
+        ? (buildData.sourceBranch ?? '').replace(/^refs\/heads\//, '')
+        : '';
+      environments[env.name] = {
+        sourceBranch,
+        deployedBy:  record.requestedFor?.displayName ?? '',
+        status:      record.result ?? 'unknown',
+        finishTime:  record.finishedOn ?? null,
+        buildNumber: record.owner?.name ?? '',
+        releaseId:   record.owner?.id ?? null,
+        releaseName: record.owner?.name ?? null,
+      };
     }
 
-    console.log(`Stage data found for: ${Object.keys(stageLatest).join(', ') || '(none)'}`);
+    console.log(`Environment data collected for: ${Object.keys(environments).join(', ') || '(none)'}`);
   } catch (err) {
-    console.warn('Could not fetch stage timelines (non-fatal):', err.message);
+    console.warn('Could not fetch environment deployment records (non-fatal):', err.message);
   }
 
   // 4. Write the status file
@@ -164,7 +182,7 @@ async function main() {
       finishTime:     build.finishTime ?? null,
       definitionName: build.definition?.name ?? ADO_PIPELINE_NAME,
     } : null,
-    ...(Object.keys(stageLatest).length > 0 && { environments: stageLatest }),
+    ...(Object.keys(environments).length > 0 && { environments }),
   };
 
   fs.writeFileSync(OUTPUT, JSON.stringify(status, null, 2));
