@@ -10,6 +10,7 @@ import {
   AdoBuildSummary,
   AdoConfig,
   AdoDefinitionMapping,
+  AdoDeploymentStatus,
   AdoReleaseDefinitionMapping,
   AdoReleaseSummary,
 } from '../models/ado.model';
@@ -148,18 +149,56 @@ export class EnvironmentService {
     this.adoError.set(null);
 
     this.adoService.syncFromJson().subscribe({
-      next: (build) => {
-        if (!build) {
+      next: (status) => {
+        if (!status.latestBuild && !status.environments) {
           this.adoError.set('ADO status not yet available — the sync workflow may not have run yet.');
           this.adoLoading.set(false);
           return;
         }
-        // ado-status.json contains the latest CI build only — it does NOT tell us
-        // which branch is deployed on each environment. Store it for header display
-        // only; do NOT overwrite individual card fields.
-        this.latestBuild.set(build);
-        this.adoLastSynced.set(new Date().toISOString());
-        this.adoLoading.set(false);
+
+        if (status.latestBuild) {
+          this.latestBuild.set(status.latestBuild);
+        }
+
+        // If the workflow captured per-environment release deployments, use those.
+        const envMap = status.environments;
+        if (envMap && Object.keys(envMap).length > 0) {
+          const deployMap = new Map<string, AdoReleaseSummary>();
+          for (const env of this.environments()) {
+            // Match ADO stage name to env card name (case-insensitive, spaces ignored)
+            const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+            const stageName = Object.keys(envMap).find(
+              k => normalize(k) === normalize(env.name),
+            );
+            if (stageName) {
+              const d = envMap[stageName];
+              deployMap.set(env.id, {
+                releaseId:        d.releaseId ?? 0,
+                releaseName:      d.releaseName ?? '',
+                sourceBranch:     d.sourceBranch,
+                buildNumber:      '',
+                deployedBy:       d.deployedBy,
+                startedOn:        d.deployedOn,
+                deploymentStatus: d.status as AdoDeploymentStatus,
+                environmentName:  stageName,
+              });
+            }
+          }
+          if (deployMap.size > 0) {
+            this.applyAdoDeployments(deployMap);
+            return;
+          }
+        }
+
+        // Fall back: apply the latest CI build to all cards (same data everywhere).
+        if (status.latestBuild) {
+          const buildMap = new Map<string, AdoBuildSummary>(
+            this.environments().map(env => [env.id, status.latestBuild!]),
+          );
+          this.applyAdoBuilds(buildMap);
+        } else {
+          this.adoLoading.set(false);
+        }
       },
       error: (err: Error) => {
         this.adoError.set(err?.message ?? 'Failed to load ADO status');

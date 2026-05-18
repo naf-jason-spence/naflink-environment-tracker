@@ -24,9 +24,11 @@ import {
   AdoConfig,
   AdoDefinitionMapping,
   AdoDeploymentListResponse,
+  AdoEnvDeployment,
   AdoReleaseDefinitionMapping,
   AdoReleaseDefOption,
   AdoReleaseSummary,
+  AdoStatusJson,
 } from '../models/ado.model';
 
 const ADO_API_VERSION = '7.1';
@@ -45,13 +47,12 @@ export class AdoService {
    * URL is resolved relative to the app's base href so it works under any
    * sub-path (e.g. /naflink-environment-tracker/).
    */
-  syncFromJson(): Observable<AdoBuildSummary | null> {
+  syncFromJson(): Observable<AdoStatusJson> {
     const url = `${this.document.baseURI}ado-status.json`;
     return this.http
-      .get<{ generatedAt: string | null; latestBuild: AdoBuildSummary | null }>(url)
+      .get<AdoStatusJson>(url)
       .pipe(
-        map(({ latestBuild }) => latestBuild),
-        catchError(() => of(null)),
+        catchError(() => of({ generatedAt: null, latestBuild: null })),
       );
   }
 

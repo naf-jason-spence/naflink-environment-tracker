@@ -1,3 +1,22 @@
+/** Per-environment release deployment record from ado-status.json. */
+export interface AdoEnvDeployment {
+  sourceBranch: string;
+  deployedBy: string;
+  status: string;
+  deployedOn: string | null;
+  releaseId: number | null;
+  releaseName: string | null;
+}
+
+/** Shape of docs/ado-status.json written by the GitHub Actions workflow. */
+export interface AdoStatusJson {
+  generatedAt: string | null;
+  latestBuild: AdoBuildSummary | null;
+  /** Per-environment deployment data keyed by ADO stage name (e.g. "QA1", "UAT"). */
+  environments?: Record<string, AdoEnvDeployment>;
+  fetchError?: string;
+}
+
 /** Credentials and target project for an Azure DevOps instance. */
 export interface AdoConfig {
   organization: string;

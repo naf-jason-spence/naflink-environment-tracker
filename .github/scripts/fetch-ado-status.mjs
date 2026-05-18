@@ -84,7 +84,63 @@ async function main() {
   const builds = await get(buildsUrl);
   const build  = builds.value?.[0] ?? null;
 
-  // 3. Write the status file
+  // 3. Try to get per-environment deployment data from release pipelines
+  const releaseEnvironments = {};
+  try {
+    const relDefsUrl =
+      `https://vsrm.dev.azure.com/${ADO_ORG}/${encodedProject}` +
+      `/_apis/release/definitions?searchText=${encodeURIComponent(ADO_PIPELINE_NAME)}&$top=10&api-version=7.0`;
+    const relDefs = await get(relDefsUrl);
+
+    if (relDefs.value?.length) {
+      const relDef = relDefs.value[0];
+      console.log(`Found release definition: ${relDef.name} (id=${relDef.id})`);
+
+      // Get all recent deployments (latest per environment stage)
+      const deploymentsUrl =
+        `https://vsrm.dev.azure.com/${ADO_ORG}/${encodedProject}` +
+        `/_apis/release/deployments?definitionId=${relDef.id}&$top=200&api-version=7.0`;
+      const deploymentsData = await get(deploymentsUrl);
+
+      // Keep only the most recent deployment per environment stage
+      const byEnv = {};
+      for (const d of deploymentsData.value ?? []) {
+        const envName = d.releaseEnvironment?.name;
+        if (!envName) continue;
+        if (!byEnv[envName] || new Date(d.deployedOn) > new Date(byEnv[envName].deployedOn)) {
+          byEnv[envName] = d;
+        }
+      }
+
+      for (const [envName, d] of Object.entries(byEnv)) {
+        // Extract source branch from the release's build artifact
+        const artifacts = d.release?.artifacts ?? [];
+        const buildArtifact = artifacts.find(a => a.type === 'Build') ?? artifacts[0];
+        const rawBranch =
+          buildArtifact?.definitionReference?.branch?.name ??
+          buildArtifact?.definitionReference?.sourceBranch?.name ?? '';
+
+        releaseEnvironments[envName] = {
+          sourceBranch: rawBranch.replace(/^refs\/heads\//, ''),
+          deployedBy:   d.requestedFor?.displayName ?? '',
+          status:       d.deploymentStatus ?? 'unknown',
+          deployedOn:   d.deployedOn ?? null,
+          releaseId:    d.release?.id ?? null,
+          releaseName:  d.release?.name ?? null,
+        };
+      }
+
+      console.log(
+        `Release deployments found for: ${Object.keys(releaseEnvironments).join(', ') || '(none)'}`,
+      );
+    } else {
+      console.log('No matching release definition found — using build data only.');
+    }
+  } catch (err) {
+    console.warn('Could not fetch release deployments (non-fatal):', err.message);
+  }
+
+  // 4. Write the status file
   const status = {
     generatedAt: new Date().toISOString(),
     latestBuild: build ? {
@@ -99,6 +155,7 @@ async function main() {
       finishTime:     build.finishTime ?? null,
       definitionName: build.definition?.name ?? ADO_PIPELINE_NAME,
     } : null,
+    ...(Object.keys(releaseEnvironments).length > 0 && { environments: releaseEnvironments }),
   };
 
   fs.writeFileSync(OUTPUT, JSON.stringify(status, null, 2));
