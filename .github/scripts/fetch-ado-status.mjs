@@ -76,7 +76,7 @@ async function main() {
   const def = defs.value[0];
   console.log(`Found definition: ${def.name} (id=${def.id})`);
 
-  // 2. Get the latest build run
+  // 2. Get the latest build run (for the summary badge)
   const buildsUrl =
     `https://dev.azure.com/${ADO_ORG}/${encodedProject}` +
     `/_apis/build/builds?definitions=${def.id}&$top=1&api-version=7.1`;
@@ -84,60 +84,69 @@ async function main() {
   const builds = await get(buildsUrl);
   const build  = builds.value?.[0] ?? null;
 
-  // 3. Try to get per-environment deployment data from release pipelines
-  const releaseEnvironments = {};
+  // 3. Get per-environment deployment state from build stage timelines.
+  //    We look at the last N completed builds and, for each Stage record in
+  //    the timeline, record the most recent result for that stage name.
+  //    This works for YAML multi-stage pipelines where each stage targets one
+  //    environment (e.g. "Deploy QA3", "Deploy UAT", etc.).
+  const stageLatest = {}; // stageName → { sourceBranch, deployedBy, status, finishTime, buildNumber }
+
   try {
-    const relDefsUrl =
-      `https://vsrm.dev.azure.com/${ADO_ORG}/${encodedProject}` +
-      `/_apis/release/definitions?searchText=${encodeURIComponent(ADO_PIPELINE_NAME)}&$top=10&api-version=7.0`;
-    const relDefs = await get(relDefsUrl);
+    const recentBuildsUrl =
+      `https://dev.azure.com/${ADO_ORG}/${encodedProject}` +
+      `/_apis/build/builds?definitions=${def.id}&$top=50&statusFilter=completed&api-version=7.1`;
+    const recentBuildsData = await get(recentBuildsUrl);
+    const recentBuilds = recentBuildsData.value ?? [];
 
-    if (relDefs.value?.length) {
-      const relDef = relDefs.value[0];
-      console.log(`Found release definition: ${relDef.name} (id=${relDef.id})`);
+    console.log(`Fetching timelines for ${recentBuilds.length} recent builds…`);
 
-      // Get all recent deployments (latest per environment stage)
-      const deploymentsUrl =
-        `https://vsrm.dev.azure.com/${ADO_ORG}/${encodedProject}` +
-        `/_apis/release/deployments?definitionId=${relDef.id}&$top=200&api-version=7.0`;
-      const deploymentsData = await get(deploymentsUrl);
+    // Fetch all timelines in parallel for speed
+    const timelineResults = await Promise.all(
+      recentBuilds.map(b =>
+        get(
+          `https://dev.azure.com/${ADO_ORG}/${encodedProject}` +
+          `/_apis/build/builds/${b.id}/timeline?api-version=7.1`,
+        )
+          .then(tl => ({ b, tl }))
+          .catch(() => null),
+      ),
+    );
 
-      // Keep only the most recent deployment per environment stage
-      const byEnv = {};
-      for (const d of deploymentsData.value ?? []) {
-        const envName = d.releaseEnvironment?.name;
-        if (!envName) continue;
-        if (!byEnv[envName] || new Date(d.deployedOn) > new Date(byEnv[envName].deployedOn)) {
-          byEnv[envName] = d;
+    for (const entry of timelineResults) {
+      if (!entry) continue;
+      const { b, tl } = entry;
+      const sourceBranch = (b.sourceBranch ?? '').replace(/^refs\/heads\//, '');
+      const deployedBy   = b.requestedFor?.displayName ?? '';
+
+      for (const rec of tl.records ?? []) {
+        if (rec.type !== 'Stage') continue;
+        if (rec.state !== 'completed') continue;
+        const result = rec.result;
+        if (!result || result === 'skipped' || result === 'abandoned') continue;
+
+        const stageName   = rec.name;
+        const finishTime  = rec.finishTime ?? b.finishTime;
+
+        if (
+          !stageLatest[stageName] ||
+          new Date(finishTime) > new Date(stageLatest[stageName].finishTime)
+        ) {
+          stageLatest[stageName] = {
+            sourceBranch,
+            deployedBy,
+            status:      result,          // succeeded | failed | partiallySucceeded
+            finishTime:  finishTime ?? new Date().toISOString(),
+            buildNumber: b.buildNumber,
+            releaseId:   b.id,
+            releaseName: b.buildNumber,
+          };
         }
       }
-
-      for (const [envName, d] of Object.entries(byEnv)) {
-        // Extract source branch from the release's build artifact
-        const artifacts = d.release?.artifacts ?? [];
-        const buildArtifact = artifacts.find(a => a.type === 'Build') ?? artifacts[0];
-        const rawBranch =
-          buildArtifact?.definitionReference?.branch?.name ??
-          buildArtifact?.definitionReference?.sourceBranch?.name ?? '';
-
-        releaseEnvironments[envName] = {
-          sourceBranch: rawBranch.replace(/^refs\/heads\//, ''),
-          deployedBy:   d.requestedFor?.displayName ?? '',
-          status:       d.deploymentStatus ?? 'unknown',
-          deployedOn:   d.deployedOn ?? null,
-          releaseId:    d.release?.id ?? null,
-          releaseName:  d.release?.name ?? null,
-        };
-      }
-
-      console.log(
-        `Release deployments found for: ${Object.keys(releaseEnvironments).join(', ') || '(none)'}`,
-      );
-    } else {
-      console.log('No matching release definition found — using build data only.');
     }
+
+    console.log(`Stage data found for: ${Object.keys(stageLatest).join(', ') || '(none)'}`);
   } catch (err) {
-    console.warn('Could not fetch release deployments (non-fatal):', err.message);
+    console.warn('Could not fetch stage timelines (non-fatal):', err.message);
   }
 
   // 4. Write the status file
@@ -155,7 +164,7 @@ async function main() {
       finishTime:     build.finishTime ?? null,
       definitionName: build.definition?.name ?? ADO_PIPELINE_NAME,
     } : null,
-    ...(Object.keys(releaseEnvironments).length > 0 && { environments: releaseEnvironments }),
+    ...(Object.keys(stageLatest).length > 0 && { environments: stageLatest }),
   };
 
   fs.writeFileSync(OUTPUT, JSON.stringify(status, null, 2));

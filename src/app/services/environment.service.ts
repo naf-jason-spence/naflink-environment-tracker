@@ -160,25 +160,33 @@ export class EnvironmentService {
           this.latestBuild.set(status.latestBuild);
         }
 
-        // If the workflow captured per-environment release deployments, use those.
+        // If the workflow captured per-environment stage data, use it.
         const envMap = status.environments;
         if (envMap && Object.keys(envMap).length > 0) {
+          // Normalize a string: lowercase, remove spaces, hyphens, underscores,
+          // and strip common noise words so "Deploy to QA3" → "qa3".
+          const normalize = (s: string) =>
+            s.toLowerCase()
+              .replace(/\bdeployto\b|\bdeploy\b|\bto\b|\bstage\b|\benv\b|\benvironment\b/g, '')
+              .replace(/[\s\-_]/g, '');
+
           const deployMap = new Map<string, AdoReleaseSummary>();
           for (const env of this.environments()) {
-            // Match ADO stage name to env card name (case-insensitive, spaces ignored)
-            const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
-            const stageName = Object.keys(envMap).find(
-              k => normalize(k) === normalize(env.name),
-            );
+            const normEnv = normalize(env.name);
+            // 1. Exact normalized match, 2. stage contains env name, 3. env name contains stage
+            const stageName = Object.keys(envMap).find(k => {
+              const normStage = normalize(k);
+              return normStage === normEnv || normStage.includes(normEnv) || normEnv.includes(normStage);
+            });
             if (stageName) {
               const d = envMap[stageName];
               deployMap.set(env.id, {
                 releaseId:        d.releaseId ?? 0,
                 releaseName:      d.releaseName ?? '',
                 sourceBranch:     d.sourceBranch,
-                buildNumber:      '',
+                buildNumber:      d.buildNumber ?? '',
                 deployedBy:       d.deployedBy,
-                startedOn:        d.deployedOn,
+                startedOn:        d.deployedOn ?? d.finishTime ?? null,
                 deploymentStatus: d.status as AdoDeploymentStatus,
                 environmentName:  stageName,
               });

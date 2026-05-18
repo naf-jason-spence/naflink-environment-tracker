@@ -3,7 +3,9 @@ export interface AdoEnvDeployment {
   sourceBranch: string;
   deployedBy: string;
   status: string;
-  deployedOn: string | null;
+  deployedOn?: string | null;
+  finishTime?: string | null;
+  buildNumber?: string;
   releaseId: number | null;
   releaseName: string | null;
 }
