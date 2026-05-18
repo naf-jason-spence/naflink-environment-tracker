@@ -20,6 +20,11 @@ const OUTPUT     = path.join(__dirname, '../../docs/ado-status.json');
 
 const { ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_PIPELINE_NAME } = process.env;
 
+// Always write a fallback file first so GitHub Pages never serves a 404.
+// The real data overwrites this on success.
+fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
+fs.writeFileSync(OUTPUT, JSON.stringify({ generatedAt: null, latestBuild: null }, null, 2));
+
 if (!ADO_PAT || !ADO_ORG || !ADO_PROJECT || !ADO_PIPELINE_NAME) {
   console.error('Missing required env vars: ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_PIPELINE_NAME');
   process.exit(1);
@@ -89,7 +94,6 @@ async function main() {
     } : null,
   };
 
-  fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
   fs.writeFileSync(OUTPUT, JSON.stringify(status, null, 2));
   console.log(`Written ${OUTPUT} — build ${build?.buildNumber ?? '(none)'}`);
 }
