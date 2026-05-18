@@ -1,0 +1,14 @@
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.75rem 2rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.1rem;
+}
+@media (max-width: 700px) {
+  .grid { grid-template-columns: 1fr; }
+  .main { padding: 1rem; }
+}
