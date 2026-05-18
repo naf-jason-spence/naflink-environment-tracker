@@ -173,11 +173,9 @@ export class EnvironmentService {
           const deployMap = new Map<string, AdoReleaseSummary>();
           for (const env of this.environments()) {
             const normEnv = normalize(env.name);
-            // 1. Exact normalized match, 2. stage contains env name, 3. env name contains stage
-            const stageName = Object.keys(envMap).find(k => {
-              const normStage = normalize(k);
-              return normStage === normEnv || normStage.includes(normEnv) || normEnv.includes(normStage);
-            });
+            // Exact normalized match only — substring matching caused 'qa2'/'qa3'/etc.
+            // to incorrectly match 'QA' because 'qa2'.includes('qa') is true.
+            const stageName = Object.keys(envMap).find(k => normalize(k) === normEnv);
             if (stageName) {
               const d = envMap[stageName];
               deployMap.set(env.id, {
