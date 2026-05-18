@@ -20,12 +20,6 @@ export class HeaderComponent {
   protected readonly envService = inject(EnvironmentService);
   readonly settingsOpen = signal(false);
 
-  onReset(): void {
-    if (confirm('Reset all environments to default? This cannot be undone.')) {
-      this.envService.resetAll();
-    }
-  }
-
   onToggleSettings(): void {
     this.settingsOpen.update(v => !v);
   }

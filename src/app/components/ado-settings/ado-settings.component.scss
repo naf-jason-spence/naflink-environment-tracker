@@ -14,7 +14,7 @@
 .settings-panel {
   position: fixed;
   top: toRem(64);   // sits flush below the sticky header
-  right: 1.75rem;
+  right: toRem(28);
   z-index: 201;
   width: toRem(420);
   max-height: calc(100vh - toRem(80));
@@ -32,15 +32,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem 0.9rem;
+  padding: toRem(16) toRem(20) toRem(14);
   border-bottom: toRem(1) solid #e8ecf0;
 }
 
 .settings-title-area {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  gap: toRem(8);
+  font-size: toRem(14);
   font-weight: 600;
   color: #0d1b3e;
 
@@ -65,17 +65,17 @@
 
 // ── Body ──────────────────────────────────────────────────────────────────────
 .settings-body {
-  padding: 1.1rem 1.25rem;
+  padding: toRem(18) toRem(20);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: toRem(24);
   flex: 1;
 }
 
-.settings-section { display: flex; flex-direction: column; gap: 0.75rem; }
+.settings-section { display: flex; flex-direction: column; gap: toRem(12); }
 
 .section-title {
-  font-size: 0.72rem;
+  font-size: toRem(12);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -84,7 +84,7 @@
 }
 
 .section-hint {
-  font-size: 0.75rem;
+  font-size: toRem(12);
   color: #8898a8;
   line-height: 1.5;
   margin: 0;
@@ -99,28 +99,28 @@
 }
 
 // ── Field row ─────────────────────────────────────────────────────────────────
-.field-row { display: flex; flex-direction: column; gap: 0.3rem; }
+.field-row { display: flex; flex-direction: column; gap: toRem(5); }
 
 .field-label {
-  font-size: 0.78rem;
+  font-size: toRem(12);
   font-weight: 500;
   color: #3a4a5c;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: toRem(2);
 }
 
 .field-hint {
-  font-size: 0.7rem;
+  font-size: toRem(11);
   font-weight: 400;
   color: #8898a8;
 }
 
 .field-input {
-  padding: 0.45rem 0.65rem;
+  padding: toRem(7) toRem(10);
   border: toRem(1) solid #d0d9e4;
   border-radius: toRem(7);
-  font-size: 0.82rem;
+  font-size: toRem(13);
   color: #1a2a3a;
   background: #fafbfc;
   outline: none;
@@ -140,19 +140,19 @@
 .mapping-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: toRem(13);
 
   th {
     text-align: left;
-    font-size: 0.7rem;
+    font-size: toRem(11);
     font-weight: 600;
     color: #7a8a9e;
-    padding: 0 0.4rem 0.5rem;
+    padding: 0 toRem(6) toRem(8);
     border-bottom: toRem(1) solid #e8ecf0;
   }
 
   td {
-    padding: 0.35rem 0.4rem;
+    padding: toRem(6) toRem(6);
     vertical-align: middle;
     border-bottom: toRem(1) solid #f0f3f7;
   }
@@ -163,9 +163,9 @@
 .env-chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.15rem 0.5rem;
+  padding: toRem(2) toRem(8);
   border-radius: toRem(5);
-  font-size: 0.72rem;
+  font-size: toRem(12);
   font-weight: 600;
   letter-spacing: 0.02em;
 
@@ -176,10 +176,10 @@
 .id-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.35rem 0.5rem;
+  padding: toRem(6) toRem(8);
   border: toRem(1) solid #d0d9e4;
   border-radius: toRem(6);
-  font-size: 0.8rem;
+  font-size: toRem(13);
   font-family: 'Courier New', monospace;
   color: #1a2a3a;
   background: #fafbfc;
@@ -199,18 +199,18 @@
 .settings-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 0.9rem 1.25rem 1rem;
+  gap: toRem(8);
+  padding: toRem(14) toRem(20) toRem(16);
   border-top: toRem(1) solid #e8ecf0;
 }
 
 .btn-secondary {
-  padding: 0.4rem 0.9rem;
+  padding: toRem(6) toRem(14);
   border: toRem(1) solid #d0d9e4;
   border-radius: toRem(7);
   background: transparent;
   color: #4a5a6a;
-  font-size: 0.82rem;
+  font-size: toRem(13);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -219,12 +219,12 @@
 }
 
 .btn-primary {
-  padding: 0.4rem 1.1rem;
+  padding: toRem(6) toRem(18);
   border: none;
   border-radius: toRem(7);
   background: #1e3a7a;
   color: #fff;
-  font-size: 0.82rem;
+  font-size: toRem(13);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
@@ -248,15 +248,15 @@
 .env-tag-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.15rem;
+  gap: toRem(6);
+  margin-top: toRem(2);
 }
 
 .pipeline-resolved {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.75rem;
+  gap: toRem(7);
+  padding: toRem(8) toRem(12);
   background: #e6f4ea;
   border: toRem(1) solid #b7dfbf;
   border-radius: toRem(7);
@@ -265,7 +265,7 @@
   svg { flex-shrink: 0; }
 
   &__name {
-    font-size: 0.82rem;
+    font-size: toRem(13);
     font-weight: 600;
     flex: 1;
     min-width: 0;
@@ -275,7 +275,7 @@
   }
 
   &__tag {
-    font-size: 0.7rem;
+    font-size: toRem(11);
     font-weight: 400;
     opacity: 0.75;
     white-space: nowrap;
@@ -284,7 +284,7 @@
 
 // ── Discovery section ─────────────────────────────────────────────────────────
 .settings-section--discover {
-  padding: 0.65rem 0.85rem;
+  padding: toRem(10) toRem(14);
   background: #f5f8ff;
   border: toRem(1) solid #d8e3f8;
   border-radius: toRem(8);
@@ -295,7 +295,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: toRem(12);
 }
 
 .discover-status {
@@ -304,7 +304,7 @@
 }
 
 .discover-hint {
-  font-size: 0.74rem;
+  font-size: toRem(12);
   color: #7a8a9e;
   line-height: 1.4;
 }
@@ -312,10 +312,10 @@
 .discover-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.74rem;
+  gap: toRem(5);
+  font-size: toRem(12);
   font-weight: 500;
-  padding: 0.2rem 0.55rem;
+  padding: toRem(3) toRem(9);
   border-radius: toRem(5);
 
   &--loading {
@@ -340,14 +340,14 @@
 .btn-discover {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: toRem(6);
   flex-shrink: 0;
-  padding: 0.38rem 0.9rem;
+  padding: toRem(6) toRem(14);
   border: toRem(1) solid #1e3a7a;
   border-radius: toRem(7);
   background: #fff;
   color: #1e3a7a;
-  font-size: 0.78rem;
+  font-size: toRem(12);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -369,10 +369,10 @@
 .id-select {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.35rem 0.5rem;
+  padding: toRem(6) toRem(8);
   border: toRem(1) solid #d0d9e4;
   border-radius: toRem(6);
-  font-size: 0.78rem;
+  font-size: toRem(12);
   color: #1a2a3a;
   background: #fafbfc;
   outline: none;
@@ -384,11 +384,11 @@
 }
 
 .select-placeholder {
-  font-size: 0.72rem;
+  font-size: toRem(12);
   color: #aab5c8;
   font-style: italic;
   display: block;
-  padding: 0.35rem 0.5rem;
+  padding: toRem(6) toRem(8);
 }
 
 // ── Spinner ───────────────────────────────────────────────────────────────────

@@ -9,15 +9,8 @@
         {{ env().status === 'occupied' ? 'Occupied' : 'Free' }}
       </span>
     </div>
-    <button class="clear-btn" (click)="onClear()" [class.clear-visible]="env().status === 'occupied'">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-      </svg>
-      Clear
-    </button>
-  </div>
 
-  <p class="deploy-status">{{ env().branchOrRepo ? 'Deployed' : 'Not deployed' }}</p>
+  </div>
 
   <!-- Fields -->
   <div class="fields">
@@ -30,17 +23,7 @@
         </svg>
         Branch / Repo
       </label>
-      <input
-        class="field-input mono"
-        [class.field-input--fixed]="env().pinned?.includes('branchOrRepo')"
-        type="text"
-        [value]="env().branchOrRepo"
-        [readonly]="!!env().pinned?.includes('branchOrRepo')"
-        (blur)="onCommit('branchOrRepo', $any($event.target).value)"
-        (keydown.enter)="$any($event.target).blur()"
-        (keydown.escape)="onReset('branchOrRepo', $any($event.target))"
-        placeholder="feature/login-fix or org/repo"
-      />
+      <span class="field-value mono" [class.field-value--muted]="!env().branchOrRepo">{{ env().branchOrRepo || '—' }}</span>
     </div>
 
     <div class="field-group">
@@ -50,35 +33,7 @@
         </svg>
         Deployed By
       </label>
-      <input
-        class="field-input"
-        [class.field-input--fixed]="env().pinned?.includes('lockedBy')"
-        type="text"
-        [value]="env().lockedBy"
-        [readonly]="!!env().pinned?.includes('lockedBy')"
-        (blur)="onCommit('lockedBy', $any($event.target).value)"
-        (keydown.enter)="$any($event.target).blur()"
-        (keydown.escape)="onReset('lockedBy', $any($event.target))"
-        placeholder="Name or initials"
-      />
-    </div>
-
-    <div class="field-group">
-      <label class="field-label">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-        </svg>
-        Notes / Link
-      </label>
-      <input
-        class="field-input"
-        type="text"
-        [value]="env().notes"
-        (blur)="onCommit('notes', $any($event.target).value)"
-        (keydown.enter)="$any($event.target).blur()"
-        (keydown.escape)="onReset('notes', $any($event.target))"
-        placeholder="Jira ticket or note"
-      />
+      <span class="field-value" [class.field-value--muted]="!env().lockedBy">{{ env().lockedBy || '—' }}</span>
     </div>
 
   </div>

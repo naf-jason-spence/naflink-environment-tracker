@@ -3,7 +3,7 @@
 .header {
   background: linear-gradient(135deg, #0d1b3e 0%, #1e3a7a 100%);
   border-bottom: toRem(1) solid rgba(255, 255, 255, 0.08);
-  padding: 0 1.75rem;
+  padding: 0 toRem(28);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -21,7 +21,7 @@
 .logo-area {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: toRem(11);
 }
 
 .logo-icon {
@@ -37,7 +37,7 @@
 }
 
 .app-title {
-  font-size: 0.95rem;
+  font-size: toRem(15);
   font-weight: 600;
   color: #ffffff;
   letter-spacing: -0.01em;
@@ -45,7 +45,7 @@
 }
 
 .app-subtitle {
-  font-size: 0.7rem;
+  font-size: toRem(11);
   color: rgba(255, 255, 255, 0.5);
   margin: 0;
 }
@@ -53,16 +53,16 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: toRem(8);
 }
 
 .sync-badge {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
+  gap: toRem(5);
+  font-size: toRem(12);
   font-weight: 500;
-  padding: 0.25rem 0.6rem;
+  padding: toRem(4) toRem(10);
   border-radius: toRem(20);
 
   &--loading { color: rgba(255,255,255,0.7); }
@@ -96,28 +96,6 @@
   }
 
   &:disabled { opacity: 0.4; cursor: not-allowed; }
-}
-
-.reset-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.85rem;
-  background: transparent;
-  border: toRem(1) solid rgba(255, 255, 255, 0.2);
-  border-radius: toRem(7);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-
-  &:hover {
-    border-color: #ef4444;
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
-  }
 }
 
 @keyframes spin {

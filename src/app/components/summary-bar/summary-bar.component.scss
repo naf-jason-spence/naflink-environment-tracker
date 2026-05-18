@@ -3,7 +3,7 @@
 .summary-bar {
   background: linear-gradient(135deg, #0d1b3e 0%, #1e3a7a 100%);
   border-bottom: toRem(1) solid rgba(255, 255, 255, 0.08);
-  padding: 0.6rem 1.75rem;
+  padding: toRem(10) toRem(28);
 }
 
 .summary-inner {
@@ -11,14 +11,14 @@
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: toRem(20);
 }
 
 .summary-text {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
+  gap: toRem(8);
+  font-size: toRem(13);
   white-space: nowrap;
 }
 
