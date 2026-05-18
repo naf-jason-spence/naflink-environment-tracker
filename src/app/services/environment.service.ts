@@ -1,35 +1,47 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import {
+  computed,
+  effect,
+  Injectable,
+  signal,
+} from '@angular/core';
+
 import { Environment } from '../models/environment.model';
 
 const STORAGE_KEY = 'qa-tracker-environments';
 
 const DEFAULT_ENVIRONMENTS: Environment[] = [
-  { id: 'qa1',  name: 'QA',   group: 'qa',  branchOrRepo: '', status: 'free', notes: '', lastUpdated: null, lockedBy: '' },
-  { id: 'qa2',  name: 'QA2',  group: 'qa',  branchOrRepo: '', status: 'free', notes: '', lastUpdated: null, lockedBy: '' },
-  { id: 'qa3',  name: 'QA3',  group: 'qa',  branchOrRepo: '', status: 'free', notes: '', lastUpdated: null, lockedBy: '' },
-  { id: 'qa4',  name: 'QA4',  group: 'qa',  branchOrRepo: '', status: 'free', notes: '', lastUpdated: null, lockedBy: '' },
-  { id: 'qa5',  name: 'QA5',  group: 'qa',  branchOrRepo: '', status: 'free', notes: '', lastUpdated: null, lockedBy: '' },
-  { id: 'uat1', name: 'UAT',  group: 'uat', branchOrRepo: '', status: 'free', notes: '', lastUpdated: null, lockedBy: '' },
-  { id: 'uat2', name: 'UAT2', group: 'uat', branchOrRepo: '', status: 'free', notes: '', lastUpdated: null, lockedBy: '' },
+  { id: 'qa1',  name: 'QA',   group: 'qa',  branchOrRepo: 'develop',              lockedBy: '',              pinned: ['branchOrRepo'],             status: 'occupied', notes: '', lastUpdated: null },
+  { id: 'qa2',  name: 'QA2',  group: 'qa',  branchOrRepo: '',                     lockedBy: '',                                                        status: 'free',     notes: '', lastUpdated: null },
+  { id: 'qa3',  name: 'QA3',  group: 'qa',  branchOrRepo: 'ng-module migration',  lockedBy: 'Jason Spence',  pinned: ['branchOrRepo', 'lockedBy'],  status: 'occupied', notes: '', lastUpdated: null },
+  { id: 'qa4',  name: 'QA4',  group: 'qa',  branchOrRepo: '',                     lockedBy: '',                                                        status: 'free',     notes: '', lastUpdated: null },
+  { id: 'qa5',  name: 'QA5',  group: 'qa',  branchOrRepo: 'angular 21 upgrade',   lockedBy: 'Luis Castro',   pinned: ['branchOrRepo', 'lockedBy'],  status: 'occupied', notes: '', lastUpdated: null },
+  { id: 'uat1', name: 'UAT',  group: 'uat', branchOrRepo: '',                     lockedBy: '',                                                        status: 'free',     notes: '', lastUpdated: null },
+  { id: 'uat2', name: 'UAT2', group: 'uat', branchOrRepo: '',                     lockedBy: '',                                                        status: 'free',     notes: '', lastUpdated: null },
 ];
 
 function loadFromStorage(): Environment[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw).map((e: any) => ({
-        id: e.id,
-        name: e.name,
-        group: e.group ?? (e.id.startsWith('uat') ? 'uat' : 'qa'),
-        branchOrRepo: e.branchOrRepo ?? e.branch ?? e.repo ?? '',
-        status: e.status ?? 'free',
-        notes: e.notes ?? '',
-        lastUpdated: e.lastUpdated ?? null,
-        lockedBy: e.lockedBy ?? '',
-      }));
+      const stored: any[] = JSON.parse(raw);
+      return DEFAULT_ENVIRONMENTS.map(def => {
+        const e = stored.find((s: any) => s.id === def.id) ?? {};
+        const pinned = def.pinned ?? [];
+        return {
+          id: def.id,
+          name: def.name,
+          group: def.group,
+          pinned: def.pinned,
+          branchOrRepo: pinned.includes('branchOrRepo') ? def.branchOrRepo : (e.branchOrRepo ?? e.branch ?? e.repo ?? ''),
+          lockedBy:     pinned.includes('lockedBy')     ? def.lockedBy     : (e.lockedBy ?? ''),
+          status:       pinned.includes('branchOrRepo') ? 'occupied'        : (e.status ?? def.status),
+          notes:        e.notes ?? '',
+          lastUpdated:  e.lastUpdated ?? null,
+        };
+      });
     }
   } catch {}
-  return DEFAULT_ENVIRONMENTS;
+  return DEFAULT_ENVIRONMENTS.map(e => ({ ...e }));
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,15 +56,33 @@ export class EnvironmentService {
   }
 
   update(id: string, changes: Partial<Environment>): void {
+    const def = DEFAULT_ENVIRONMENTS.find(d => d.id === id);
     this.environments.update(envs =>
-      envs.map(env => env.id === id ? { ...env, ...changes, lastUpdated: new Date().toISOString() } : env)
+      envs.map(env => {
+        if (env.id !== id) return env;
+        const updated = { ...env, ...changes, lastUpdated: new Date().toISOString() };
+        // Restore any pinned fields that must not be overwritten
+        const pinned = def?.pinned ?? [];
+        if (pinned.includes('branchOrRepo')) { updated.branchOrRepo = def!.branchOrRepo; updated.status = 'occupied'; }
+        if (pinned.includes('lockedBy')) updated.lockedBy = def!.lockedBy;
+        return updated;
+      })
     );
   }
 
   clear(id: string): void {
+    const def = DEFAULT_ENVIRONMENTS.find(d => d.id === id)!;
+    const pinned = def.pinned ?? [];
     this.environments.update(envs =>
       envs.map(env => env.id === id
-        ? { ...env, branchOrRepo: '', status: 'free', notes: '', lockedBy: '', lastUpdated: new Date().toISOString() }
+        ? {
+            ...env,
+            branchOrRepo: pinned.includes('branchOrRepo') ? def.branchOrRepo : '',
+            lockedBy:     pinned.includes('lockedBy')     ? def.lockedBy     : '',
+            status:       pinned.includes('branchOrRepo') ? 'occupied'        : 'free',
+            notes: '',
+            lastUpdated: new Date().toISOString(),
+          }
         : env)
     );
   }

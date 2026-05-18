@@ -167,6 +167,20 @@
     border-color: var(--input-focus);
     box-shadow: 0 0 0 toRem(3) rgba(59, 111, 212, 0.12);
   }
+
+  &--fixed {
+    background: var(--input-bg);
+    color: #1d4ed8;
+    font-weight: 600;
+    cursor: default;
+    border-style: dashed;
+    border-color: #93c5fd;
+
+    &:focus {
+      border-color: #93c5fd;
+      box-shadow: none;
+    }
+  }
 }
 
 /* -- Footer -- */

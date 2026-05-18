@@ -32,8 +32,10 @@
       </label>
       <input
         class="field-input mono"
+        [class.field-input--fixed]="env().pinned?.includes('branchOrRepo')"
         type="text"
         [value]="env().branchOrRepo"
+        [readonly]="!!env().pinned?.includes('branchOrRepo')"
         (blur)="onCommit('branchOrRepo', $any($event.target).value)"
         (keydown.enter)="$any($event.target).blur()"
         (keydown.escape)="onReset('branchOrRepo', $any($event.target))"
@@ -50,8 +52,10 @@
       </label>
       <input
         class="field-input"
+        [class.field-input--fixed]="env().pinned?.includes('lockedBy')"
         type="text"
         [value]="env().lockedBy"
+        [readonly]="!!env().pinned?.includes('lockedBy')"
         (blur)="onCommit('lockedBy', $any($event.target).value)"
         (keydown.enter)="$any($event.target).blur()"
         (keydown.escape)="onReset('lockedBy', $any($event.target))"
