@@ -108,15 +108,22 @@ async function main() {
     const trackedNames = new Set(['Dev', 'QA', 'QA2', 'QA3', 'QA4', 'QA5', 'UAT', 'UAT2', 'Staging']);
     const relevant = envList.filter(e => trackedNames.has(e.name));
 
-    // 3b. Fetch the latest deployment record for each relevant environment
+    // 3b. Fetch the latest deployment record for each relevant environment.
+    //     Fetch top=20 because skipped deployment jobs (e.g. QA3 is skipped for
+    //     'develop' branch runs) create records with result='skipped'. We want
+    //     the most recent record that was actually executed (not skipped/canceled).
+    const SKIP_RESULTS = new Set(['skipped', 'canceled', 'abandoned']);
     const recordResults = await Promise.all(
       relevant.map(env =>
         get(
           `https://dev.azure.com/${ADO_ORG}/${encodedProject}` +
           `/_apis/distributedtask/environments/${env.id}/environmentdeploymentrecords` +
-          `?top=1&api-version=7.1`,
+          `?top=20&api-version=7.1`,
         )
-          .then(data => ({ env, record: data.value?.[0] ?? null }))
+          .then(data => {
+            const record = (data.value ?? []).find(r => !SKIP_RESULTS.has(r.result)) ?? null;
+            return { env, record };
+          })
           .catch(err => {
             console.warn(`Could not fetch records for '${env.name}': ${err.message}`);
             return { env, record: null };
