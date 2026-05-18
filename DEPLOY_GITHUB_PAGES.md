@@ -12,6 +12,6 @@ git push
    - Save.
 
 3. Your site will be available at:
-   `https://<your-username>.github.io/naflink-environment-tracker/`
+   `https://naf-jason-spence.github.io/naflink-environment-tracker/`
 
 If you need a custom domain, you can configure it in the same Pages settings.
