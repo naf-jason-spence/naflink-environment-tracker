@@ -10,5 +10,15 @@
     <div class="progress-bar-wrap">
       <div class="progress-bar-fill" [style.width.%]="occupiedPercent()"></div>
     </div>
+    @if (envService.isProduction && envService.latestBuild()) {
+      <div class="latest-build">
+        <span class="build-label">Latest build</span>
+        <span class="build-number">{{ envService.latestBuild()!.buildNumber }}</span>
+        <span class="build-branch">{{ envService.latestBuild()!.sourceBranch }}</span>
+        <span class="build-status" [class]="'build-status--' + envService.latestBuild()!.result">
+          {{ envService.latestBuild()!.result }}
+        </span>
+      </div>
+    }
   </div>
 </div>

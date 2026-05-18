@@ -22,6 +22,48 @@
   white-space: nowrap;
 }
 
+.latest-build {
+  display: flex;
+  align-items: center;
+  gap: toRem(8);
+  margin-left: auto;
+  font-size: toRem(12);
+  white-space: nowrap;
+}
+
+.build-label {
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: toRem(10);
+}
+
+.build-number {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.build-branch {
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-mono);
+}
+
+.build-status {
+  font-weight: 600;
+  padding: toRem(2) toRem(7);
+  border-radius: toRem(4);
+  font-size: toRem(11);
+
+  &--succeeded        { background: rgba(34, 197, 94, 0.2);  color: #86efac; }
+  &--failed           { background: rgba(239, 68, 68, 0.2);  color: #fca5a5; }
+  &--partiallySucceeded { background: rgba(245,158,11,0.2);  color: #fcd34d; }
+  &--inProgress       { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+  &--notDeployed,
+  &--canceled         { background: rgba(255,255,255,0.08);  color: rgba(255,255,255,0.4); }
+}
+
 .stat { font-weight: 500; }
 .occupied { color: #f97316; }
 .free { color: #22c55e; }

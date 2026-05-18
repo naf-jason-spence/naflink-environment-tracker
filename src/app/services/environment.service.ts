@@ -74,6 +74,8 @@ export class EnvironmentService {
   readonly adoError = signal<string | null>(null);
   readonly adoLastSynced = signal<string | null>(null);
   readonly adoMappings = signal<AdoReleaseDefinitionMapping[]>(loadAdoMappings());
+  /** Latest CI build from ado-status.json (production only). Not per-environment. */
+  readonly latestBuild = signal<AdoBuildSummary | null>(null);
 
   constructor() {
     effect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(this.environments())));
@@ -152,11 +154,12 @@ export class EnvironmentService {
           this.adoLoading.set(false);
           return;
         }
-        // Single shared pipeline: apply the same build summary to every environment.
-        const buildMap = new Map<string, AdoBuildSummary>(
-          this.environments().map(env => [env.id, build]),
-        );
-        this.applyAdoBuilds(buildMap);
+        // ado-status.json contains the latest CI build only — it does NOT tell us
+        // which branch is deployed on each environment. Store it for header display
+        // only; do NOT overwrite individual card fields.
+        this.latestBuild.set(build);
+        this.adoLastSynced.set(new Date().toISOString());
+        this.adoLoading.set(false);
       },
       error: (err: Error) => {
         this.adoError.set(err?.message ?? 'Failed to load ADO status');
