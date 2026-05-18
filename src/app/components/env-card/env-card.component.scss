@@ -41,7 +41,7 @@
 
 /* -- Env badge - group colored -- */
 .env-badge {
-  font-size: toRem(12);
+  font-size: toRem(13);
   font-weight: 700;
   padding: toRem(4) toRem(10);
   border-radius: toRem(6);
@@ -107,17 +107,29 @@
 }
 
 .field-value {
-  font-size: toRem(13);
+  font-size: toRem(14);
   color: var(--text-primary);
   padding: toRem(4) 0;
 
   &.mono {
     font-family: var(--font-mono);
-    font-size: toRem(12);
+    font-size: toRem(13);
   }
 
   &--muted {
     color: var(--text-muted);
+  }
+
+  &--pinned {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+    border: toRem(1) dashed #93c5fd;
+    border-radius: toRem(5);
+    padding: toRem(3) toRem(8);
+
+    &.mono { font-family: var(--font-mono); font-size: toRem(13); }
   }
 }
 

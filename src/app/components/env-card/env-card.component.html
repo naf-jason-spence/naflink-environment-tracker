@@ -23,7 +23,7 @@
         </svg>
         Branch / Repo
       </label>
-      <span class="field-value mono" [class.field-value--muted]="!env().branchOrRepo">{{ env().branchOrRepo || '—' }}</span>
+      <span class="field-value mono" [class.field-value--pinned]="!!env().branchOrRepo" [class.field-value--muted]="!env().branchOrRepo">{{ env().branchOrRepo || '—' }}</span>
     </div>
 
     <div class="field-group">
@@ -33,7 +33,7 @@
         </svg>
         Deployed By
       </label>
-      <span class="field-value" [class.field-value--muted]="!env().lockedBy">{{ env().lockedBy || '—' }}</span>
+      <span class="field-value" [class.field-value--pinned]="!!env().lockedBy" [class.field-value--muted]="!env().lockedBy">{{ env().lockedBy || '—' }}</span>
     </div>
 
   </div>
