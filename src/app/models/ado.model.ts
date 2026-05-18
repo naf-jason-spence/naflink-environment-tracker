@@ -19,40 +19,6 @@ export interface AdoStatusJson {
   fetchError?: string;
 }
 
-/** Credentials and target project for an Azure DevOps instance. */
-export interface AdoConfig {
-  organization: string;
-  project: string;
-  /**
-   * Personal Access Token.
-   * Stored in sessionStorage only — never written to localStorage / disk.
-   * Required scope: Release (read).
-   */
-  pat: string;
-}
-
-/** Maps a local environment slot to an ADO release pipeline stage. */
-export interface AdoReleaseDefinitionMapping {
-  /** Local environment ID, e.g. 'qa1' */
-  envId: string;
-  /**
-   * ADO release definition ID.
-   * Found in the URL: Pipelines → Releases → select a pipeline → URL contains ?definitionId=N
-   */
-  releaseDefinitionId: number;
-  /**
-   * ADO release environment (stage) ID within the definition.
-   * Found in the URL when you click Edit on a stage: ?environmentId=N
-   */
-  releaseEnvironmentId: number;
-}
-
-/** @deprecated Use AdoReleaseDefinitionMapping. Kept for backwards-compatibility during migration. */
-export interface AdoDefinitionMapping {
-  envId: string;
-  definitionId: number;
-}
-
 // ── Status / result enums ────────────────────────────────────────────────────
 
 export type AdoBuildStatus =
@@ -95,7 +61,7 @@ export interface AdoBuildSummary {
   definitionName: string;
 }
 
-/** Normalised deployment record from the ADO Release Management API. */
+/** Normalised deployment record used by applyAdoDeployments. */
 export interface AdoReleaseSummary {
   releaseId: number;
   releaseName: string;
@@ -108,61 +74,4 @@ export interface AdoReleaseSummary {
   startedOn: string | null;
   deploymentStatus: AdoDeploymentStatus;
   environmentName: string;
-}
-
-// ── Raw ADO REST API response shapes ────────────────────────────────────────
-
-export interface AdoBuildListResponse {
-  count: number;
-  value: AdoApiBuild[];
-}
-
-export interface AdoApiBuild {
-  id: number;
-  buildNumber: string;
-  status: AdoBuildStatus;
-  result: AdoBuildResult;
-  sourceBranch: string;
-  sourceVersion: string;
-  requestedFor: { displayName: string };
-  startTime: string;
-  finishTime: string | null;
-  definition: { id: number; name: string };
-}
-
-export interface AdoDeploymentListResponse {
-  count: number;
-  value: AdoApiDeployment[];
-}
-
-export interface AdoApiDeployment {
-  release: {
-    id: number;
-    name: string;
-    artifacts: Array<{
-      definitionReference: {
-        branch: { id: string; name: string };
-        version: { id: string; name: string };
-      };
-    }>;
-  };
-  releaseEnvironment: { id: number; name: string };
-  requestedBy: { displayName: string };
-  startedOn: string | null;
-  deploymentStatus: AdoDeploymentStatus;
-}
-
-// ── Discovery shapes (used by the settings panel) ────────────────────────────
-
-/** A release pipeline definition with its stages, populated via the discovery call. */
-export interface AdoReleaseDefOption {
-  id: number;
-  name: string;
-  stages: AdoReleaseStageOption[];
-}
-
-/** A stage (environment) within a release pipeline definition. */
-export interface AdoReleaseStageOption {
-  id: number;
-  name: string;
 }
