@@ -156,7 +156,6 @@ export class EnvironmentService {
   }
 
   markAsFree(envId: string): void {
-    const prevState = this.environments();
     const now = new Date().toISOString();
 
     this.dispatchError.set(null);
@@ -199,9 +198,8 @@ export class EnvironmentService {
         this.clearPendingFree(envId);
       },
       error: (err: unknown) => {
-        this.environments.set(prevState);
         this.clearPendingFree(envId);
-        const message = err instanceof Error ? err.message : 'Failed to dispatch mark-free workflow.';
+        const message = this.getDispatchErrorMessage(err);
         this.dispatchError.set(message);
         this.scheduleDispatchErrorAutoClear();
       }
@@ -352,6 +350,27 @@ export class EnvironmentService {
     if (!this.dispatchErrorTimer) return;
     clearTimeout(this.dispatchErrorTimer);
     this.dispatchErrorTimer = null;
+  }
+
+  private getDispatchErrorMessage(err: unknown): string {
+    const fallback = 'Failed to persist "Done / Free" to GitHub Actions. Local card is updated only.';
+
+    if (!err || typeof err !== 'object') return fallback;
+    const maybe = err as {
+      status?: number;
+      statusText?: string;
+      message?: string;
+      error?: { message?: string } | string;
+    };
+
+    const statusPart = maybe.status ? ` (${maybe.status}${maybe.statusText ? ` ${maybe.statusText}` : ''})` : '';
+    const detail = typeof maybe.error === 'string'
+      ? maybe.error
+      : maybe.error?.message || maybe.message;
+
+    return detail
+      ? `GitHub dispatch failed${statusPart}: ${detail}`
+      : `${fallback}${statusPart}`;
   }
 
   private getCurrentActor(): string {
