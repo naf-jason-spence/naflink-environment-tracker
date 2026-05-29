@@ -19,16 +19,16 @@ export class AdoService {
   private readonly document = inject(DOCUMENT);
 
   /**
-   * Reads the pre-generated ado-status.json produced by the GitHub Actions
+   * Reads the pre-generated env-state.json produced by the GitHub Actions
    * workflow. URL is resolved relative to the app's base href so it works
    * under any sub-path (e.g. /naflink-environment-tracker/).
    */
   syncFromJson(): Observable<AdoStatusJson> {
-    const url = `${this.document.baseURI}ado-status.json`;
+    const url = `${this.document.baseURI}env-state.json`;
     return this.http
       .get<AdoStatusJson>(url)
       .pipe(
-        catchError(() => of({ generatedAt: null, latestBuild: null })),
+        catchError(() => of({ generatedAt: null, latestBuild: null, userState: {} })),
       );
   }
 }

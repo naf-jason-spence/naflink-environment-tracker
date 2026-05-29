@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fetches ADO environment deployment records and writes docs/ado-status.json.
+ * Fetches ADO environment deployment records and writes docs/env-state.json.
  * Called by the GitHub Actions deploy workflow after `ng build`.
  *
  * Required environment variables (set in the workflow):
@@ -20,14 +20,26 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname  = path.dirname(fileURLToPath(import.meta.url));
-const OUTPUT     = path.join(__dirname, '../../docs/ado-status.json');
+const OUTPUT     = path.join(__dirname, '../../docs/env-state.json');
+const USER_STATE_INPUT = path.join(__dirname, '../../public/env-user-state.json');
 
 const { ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_PIPELINE_NAME } = process.env;
 
 // Always write a fallback file first so GitHub Pages never serves a 404.
 // The real data overwrites this on success.
 fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
-fs.writeFileSync(OUTPUT, JSON.stringify({ generatedAt: null, latestBuild: null }, null, 2));
+fs.writeFileSync(OUTPUT, JSON.stringify({ generatedAt: null, latestBuild: null, userState: {} }, null, 2));
+
+function loadUserState() {
+  try {
+    if (!fs.existsSync(USER_STATE_INPUT)) return {};
+    const raw = fs.readFileSync(USER_STATE_INPUT, 'utf8');
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object') ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 if (!ADO_PAT || !ADO_ORG || !ADO_PROJECT || !ADO_PIPELINE_NAME) {
   const missing = ['ADO_PAT', 'ADO_ORG', 'ADO_PROJECT', 'ADO_PIPELINE_NAME']
@@ -36,6 +48,7 @@ if (!ADO_PAT || !ADO_ORG || !ADO_PROJECT || !ADO_PIPELINE_NAME) {
   fs.writeFileSync(OUTPUT, JSON.stringify({
     generatedAt: new Date().toISOString(),
     latestBuild: null,
+    userState: loadUserState(),
     fetchError: `Missing env vars: ${missing.join(', ')}`,
   }, null, 2));
   process.exit(1);
@@ -198,6 +211,7 @@ async function main() {
       definitionName: build.definition?.name ?? ADO_PIPELINE_NAME,
     } : null,
     ...(Object.keys(environments).length > 0 && { environments }),
+    userState: loadUserState(),
   };
 
   fs.writeFileSync(OUTPUT, JSON.stringify(status, null, 2));
@@ -207,6 +221,11 @@ async function main() {
 main().catch(err => {
   console.error('fetch-ado-status failed:', err.message);
   // Write the error into the JSON so it's visible at the URL without needing workflow logs.
-  fs.writeFileSync(OUTPUT, JSON.stringify({ generatedAt: new Date().toISOString(), latestBuild: null, fetchError: err.message }, null, 2));
+  fs.writeFileSync(OUTPUT, JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    latestBuild: null,
+    userState: loadUserState(),
+    fetchError: err.message
+  }, null, 2));
   process.exit(1);
 });

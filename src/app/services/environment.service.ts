@@ -10,11 +10,14 @@ import {
   AdoBuildSummary,
   AdoDeploymentStatus,
   AdoReleaseSummary,
+  EnvUserState,
 } from '../models/ado.model';
 import { Environment } from '../models/environment.model';
 import { AdoService } from './ado.service';
+import { GithubService } from './github.service';
 
 const STORAGE_KEY = 'qa-tracker-environments';
+const POLL_INTERVAL_MS = 60_000;
 
 const DEFAULT_ENVIRONMENTS: Environment[] = [
   { id: 'qa1',  name: 'QA',   group: 'qa',  branchOrRepo: '', lockedBy: '', status: 'free', notes: '', lastUpdated: null },
@@ -37,8 +40,13 @@ function loadFromStorage(): Environment[] {
 @Injectable({ providedIn: 'root' })
 export class EnvironmentService {
   private readonly adoService = inject(AdoService);
+  private readonly githubService = inject(GithubService);
+  private dispatchErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly environments = signal<Environment[]>(loadFromStorage());
+  readonly pendingFreeIds = signal<Set<string>>(new Set());
+  readonly dispatchPending = computed(() => this.pendingFreeIds().size > 0);
+  readonly dispatchError = signal<string | null>(null);
   readonly occupiedCount = computed(() => this.environments().filter(e => e.status === 'occupied').length);
   readonly freeCount = computed(() => this.environments().filter(e => e.status === 'free').length);
   readonly total = computed(() => this.environments().length);
@@ -60,9 +68,10 @@ export class EnvironmentService {
   constructor() {
     effect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(this.environments())));
 
-    // On GitHub Pages: auto-populate from the pre-generated JSON — no PAT required.
+    // On GitHub Pages: auto-populate from the pre-generated JSON.
     if (this.isProduction) {
       this.syncFromStatusJson();
+      setInterval(() => this.syncFromStatusJson(), POLL_INTERVAL_MS);
     }
   }
 
@@ -78,7 +87,7 @@ export class EnvironmentService {
 
     this.adoService.syncFromJson().subscribe({
       next: (status) => {
-        if (!status.latestBuild && !status.environments) {
+        if (!status.latestBuild && !status.environments && !status.userState) {
           this.adoError.set('ADO status not yet available — the sync workflow may not have run yet.');
           this.adoLoading.set(false);
           return;
@@ -90,6 +99,7 @@ export class EnvironmentService {
 
         // If the workflow captured per-environment stage data, use it.
         const envMap = status.environments;
+        let adoApplied = false;
         if (envMap && Object.keys(envMap).length > 0) {
           // Normalize a string: lowercase, remove spaces, hyphens, underscores,
           // and strip common noise words so "Deploy to QA3" → "qa3".
@@ -120,19 +130,23 @@ export class EnvironmentService {
           }
           if (deployMap.size > 0) {
             this.applyAdoDeployments(deployMap);
-            return;
+            adoApplied = true;
           }
         }
 
         // Fall back: apply the latest CI build to all cards (same data everywhere).
-        if (status.latestBuild) {
+        if (!adoApplied && status.latestBuild) {
           const buildMap = new Map<string, AdoBuildSummary>(
             this.environments().map(env => [env.id, status.latestBuild!]),
           );
           this.applyAdoBuilds(buildMap);
-        } else {
-          this.adoLoading.set(false);
         }
+
+        // Apply manual user overrides after ADO data is applied.
+        this.applyUserState(status.userState ?? {});
+
+        this.adoLastSynced.set(new Date().toISOString());
+        this.adoLoading.set(false);
       },
       error: (err: Error) => {
         this.adoError.set(err?.message ?? 'Failed to load ADO status');
@@ -142,12 +156,24 @@ export class EnvironmentService {
   }
 
   markAsFree(envId: string): void {
+    const prevState = this.environments();
+    const now = new Date().toISOString();
+
+    this.dispatchError.set(null);
+    this.clearDispatchErrorTimer();
+
+    this.pendingFreeIds.update(prev => {
+      const next = new Set(prev);
+      next.add(envId);
+      return next;
+    });
+
     this.environments.update(envs =>
       envs.map(env =>
         env.id !== envId ? env : {
           ...env,
           status:              'free' as const,
-          freedAt:             new Date().toISOString(),
+          freedAt:             now,
           branchOrRepo:        '',
           lockedBy:            '',
           adoReleaseId:        undefined,
@@ -156,10 +182,34 @@ export class EnvironmentService {
           adoDeploymentStatus: undefined,
           adoDeployedBy:       undefined,
           adoStartedOn:        undefined,
-          lastUpdated:         new Date().toISOString(),
+          lastUpdated:         now,
         }
       )
     );
+
+    const actor = this.getCurrentActor();
+    this.githubService.dispatchMarkEnvironment({
+      envId,
+      action: 'free',
+      user: actor,
+      notes: '',
+    }).subscribe({
+      next: () => {
+        this.refreshSoon();
+        this.clearPendingFree(envId);
+      },
+      error: (err: unknown) => {
+        this.environments.set(prevState);
+        this.clearPendingFree(envId);
+        const message = err instanceof Error ? err.message : 'Failed to dispatch mark-free workflow.';
+        this.dispatchError.set(message);
+        this.scheduleDispatchErrorAutoClear();
+      }
+    });
+  }
+
+  isMarkingFree(envId: string): boolean {
+    return this.pendingFreeIds().has(envId);
   }
 
   private applyAdoBuilds(buildMap: Map<string, AdoBuildSummary>): void {
@@ -201,8 +251,6 @@ export class EnvironmentService {
         };
       })
     );
-    this.adoLastSynced.set(new Date().toISOString());
-    this.adoLoading.set(false);
   }
 
   private applyAdoDeployments(deployMap: Map<string, AdoReleaseSummary>): void {
@@ -230,7 +278,90 @@ export class EnvironmentService {
         };
       })
     );
-    this.adoLastSynced.set(new Date().toISOString());
-    this.adoLoading.set(false);
+  }
+
+  private applyUserState(userState: Record<string, EnvUserState>): void {
+    if (!userState || Object.keys(userState).length === 0) return;
+
+    this.environments.update(envs =>
+      envs.map(env => {
+        const override = userState[env.id];
+        if (!override) return env;
+
+        if (override.status === 'free') {
+          const freedAt = override.freedAt ?? new Date().toISOString();
+
+          // Ignore stale manual frees when a newer deployment has happened.
+          if (env.adoStartedOn && freedAt <= env.adoStartedOn) {
+            return env;
+          }
+
+          return {
+            ...env,
+            status: 'free',
+            freedAt,
+            notes: override.notes ?? env.notes,
+            branchOrRepo: '',
+            lockedBy: '',
+            adoReleaseId: undefined,
+            adoReleaseName: undefined,
+            adoBuildNumber: undefined,
+            adoDeploymentStatus: undefined,
+            adoDeployedBy: undefined,
+            adoStartedOn: undefined,
+            lastUpdated: freedAt,
+          };
+        }
+
+        return {
+          ...env,
+          status: 'occupied',
+          freedAt: null,
+          notes: override.notes ?? env.notes,
+          branchOrRepo: override.branchOrRepo ?? env.branchOrRepo,
+          lockedBy: override.lockedBy ?? override.freedBy ?? env.lockedBy,
+          lastUpdated: new Date().toISOString(),
+        };
+      })
+    );
+  }
+
+  private refreshSoon(): void {
+    setTimeout(() => this.syncFromStatusJson(), 5_000);
+    setTimeout(() => this.syncFromStatusJson(), 20_000);
+    setTimeout(() => this.syncFromStatusJson(), 45_000);
+  }
+
+  private clearPendingFree(envId: string): void {
+    this.pendingFreeIds.update(prev => {
+      const next = new Set(prev);
+      next.delete(envId);
+      return next;
+    });
+  }
+
+  private scheduleDispatchErrorAutoClear(): void {
+    this.clearDispatchErrorTimer();
+    this.dispatchErrorTimer = setTimeout(() => {
+      this.dispatchError.set(null);
+      this.dispatchErrorTimer = null;
+    }, 12_000);
+  }
+
+  private clearDispatchErrorTimer(): void {
+    if (!this.dispatchErrorTimer) return;
+    clearTimeout(this.dispatchErrorTimer);
+    this.dispatchErrorTimer = null;
+  }
+
+  private getCurrentActor(): string {
+    const key = 'envtracker.actor';
+    const existing = localStorage.getItem(key)?.trim();
+    if (existing) return existing;
+
+    const entered = window.prompt('Enter your name for environment updates:')?.trim();
+    if (!entered) return 'unknown';
+    localStorage.setItem(key, entered);
+    return entered;
   }
 }

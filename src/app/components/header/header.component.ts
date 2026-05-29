@@ -20,7 +20,7 @@ export class HeaderComponent {
   onSync(): void {
     // ADO REST API blocks browser requests with CORS, so direct calls never
     // work from a browser regardless of environment. Always read the static
-    // ado-status.json (written by GitHub Actions in prod; placeholder in dev).
+    // env-state.json (written by GitHub Actions in prod; placeholder in dev).
     this.envService.syncFromStatusJson();
   }
 }

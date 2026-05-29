@@ -42,8 +42,8 @@ jobs:
       - name: Build app
         run: npx ng build --configuration production
 
-      - name: Create ado-status.json fallback
-        run: echo '{"generatedAt":null,"latestBuild":null}' > docs/ado-status.json
+      - name: Create env-state.json fallback
+        run: echo '{"generatedAt":null,"latestBuild":null,"userState":{}}' > docs/env-state.json
 
       - name: Fetch ADO build status
         env:
