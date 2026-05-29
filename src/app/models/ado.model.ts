@@ -10,12 +10,24 @@ export interface AdoEnvDeployment {
   releaseName: string | null;
 }
 
+/** Manual user override state keyed by internal env ID (qa1, qa2, uat1, ...). */
+export interface EnvUserState {
+  status: 'free' | 'occupied';
+  freedAt?: string | null;
+  freedBy?: string;
+  notes?: string;
+  branchOrRepo?: string;
+  lockedBy?: string;
+}
+
 /** Shape of docs/ado-status.json written by the GitHub Actions workflow. */
 export interface AdoStatusJson {
   generatedAt: string | null;
   latestBuild: AdoBuildSummary | null;
   /** Per-environment deployment data keyed by ADO stage name (e.g. "QA1", "UAT"). */
   environments?: Record<string, AdoEnvDeployment>;
+  /** Manual user overrides keyed by app environment id (qa1, qa2, ...). */
+  userState?: Record<string, EnvUserState>;
   fetchError?: string;
 }
 

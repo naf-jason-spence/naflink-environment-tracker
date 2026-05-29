@@ -1,0 +1,75 @@
+name: Mark Environment State
+
+on:
+  workflow_dispatch:
+    inputs:
+      envId:
+        description: 'Environment id (qa1, qa2, qa3, qa4, qa5, uat1, uat2)'
+        required: true
+        type: string
+      action:
+        description: 'State action'
+        required: true
+        type: choice
+        options:
+          - free
+          - occupied
+      user:
+        description: 'Who made the change'
+        required: false
+        default: unknown
+        type: string
+      notes:
+        description: 'Optional notes'
+        required: false
+        default: ''
+        type: string
+      branchOrRepo:
+        description: 'Optional branch/repo for occupied state'
+        required: false
+        default: ''
+        type: string
+      targetRef:
+        description: 'Branch to update'
+        required: false
+        default: develop
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.targetRef }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Update env user state
+        env:
+          ENV_ID: ${{ inputs.envId }}
+          ENV_ACTION: ${{ inputs.action }}
+          ENV_USER: ${{ inputs.user }}
+          ENV_NOTES: ${{ inputs.notes }}
+          ENV_BRANCH_OR_REPO: ${{ inputs.branchOrRepo }}
+        run: node .github/scripts/mark-env-state.mjs
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/env-user-state.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(env): mark ${{ inputs.envId }} as ${{ inputs.action }}"
+          git pull --rebase origin "${{ inputs.targetRef }}"
+          git push origin HEAD:"${{ inputs.targetRef }}"

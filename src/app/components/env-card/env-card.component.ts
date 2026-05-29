@@ -22,6 +22,10 @@ export class EnvCardComponent {
 
   private readonly envService = inject(EnvironmentService);
 
+  isMarkingFree(): boolean {
+    return this.envService.isMarkingFree(this.env().id);
+  }
+
   markFree(): void {
     this.envService.markAsFree(this.env().id);
   }
