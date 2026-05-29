@@ -21,6 +21,13 @@ interface WorkflowDispatchRequest {
   inputs: DispatchInputs;
 }
 
+interface EnvTrackerRuntimeConfig {
+  dispatchToken?: string;
+  owner?: string;
+  repo?: string;
+  ref?: string;
+}
+
 const LS_TOKEN_KEY = 'envtracker.github.token';
 const LS_OWNER_KEY = 'envtracker.github.owner';
 const LS_REPO_KEY = 'envtracker.github.repo';
@@ -35,11 +42,15 @@ const WORKFLOW_ID = 'mark-env.yml';
 export class GithubService {
   private readonly http = inject(HttpClient);
 
+  private get runtimeConfig(): EnvTrackerRuntimeConfig {
+    return (window as Window & { __ENVTRACKER_CONFIG__?: EnvTrackerRuntimeConfig }).__ENVTRACKER_CONFIG__ ?? {};
+  }
+
   dispatchMarkEnvironment(inputs: DispatchInputs): Observable<void> {
     const token = this.getToken();
-    const owner = localStorage.getItem(LS_OWNER_KEY)?.trim() || DEFAULT_OWNER;
-    const repo = localStorage.getItem(LS_REPO_KEY)?.trim() || DEFAULT_REPO;
-    const ref = localStorage.getItem(LS_REF_KEY)?.trim() || DEFAULT_REF;
+    const owner = this.runtimeConfig.owner?.trim() || localStorage.getItem(LS_OWNER_KEY)?.trim() || DEFAULT_OWNER;
+    const repo = this.runtimeConfig.repo?.trim() || localStorage.getItem(LS_REPO_KEY)?.trim() || DEFAULT_REPO;
+    const ref = this.runtimeConfig.ref?.trim() || localStorage.getItem(LS_REF_KEY)?.trim() || DEFAULT_REF;
 
     const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_ID}/dispatches`;
     const body: WorkflowDispatchRequest = { ref, inputs };
@@ -54,15 +65,19 @@ export class GithubService {
   }
 
   private getToken(): string {
-    const existing = localStorage.getItem(LS_TOKEN_KEY)?.trim();
-    if (existing) return existing;
+    const configuredToken = this.runtimeConfig.dispatchToken?.trim();
+    if (configuredToken) return configuredToken;
 
-    const entered = window.prompt('Enter ENVTRACKER_DISPATCH_TOKEN (stored in this browser only):')?.trim();
-    if (!entered) {
-      throw new Error('A GitHub dispatch token is required to mark environments as free.');
-    }
+    const localToken = localStorage.getItem(LS_TOKEN_KEY)?.trim();
+    if (localToken) return localToken;
 
-    localStorage.setItem(LS_TOKEN_KEY, entered);
-    return entered;
+    const globalToken = (window as Window & { __ENVTRACKER_DISPATCH_TOKEN__?: string })
+      .__ENVTRACKER_DISPATCH_TOKEN__
+      ?.trim();
+    if (globalToken) return globalToken;
+
+    throw new Error(
+      "Dispatch token is not configured. Set window.__ENVTRACKER_CONFIG__.dispatchToken, localStorage key 'envtracker.github.token', or window.__ENVTRACKER_DISPATCH_TOKEN__."
+    );
   }
 }
