@@ -39,6 +39,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Inject runtime config
+        shell: bash
+        env:
+          DISPATCH_TOKEN: ${{ secrets.ENVTRACKER_DISPATCH_TOKEN }}
+          DISPATCH_OWNER: ${{ vars.ENVTRACKER_DISPATCH_OWNER }}
+          DISPATCH_REPO: ${{ vars.ENVTRACKER_DISPATCH_REPO }}
+          DISPATCH_REF: ${{ vars.ENVTRACKER_DISPATCH_REF }}
+        run: |
+          OWNER="${DISPATCH_OWNER:-NAF-Tech}"
+          REPO="${DISPATCH_REPO:-naflink-environment-tracker}"
+          REF="${DISPATCH_REF:-develop}"
+
+          cat > public/runtime-config.js <<EOF
+          window.__ENVTRACKER_CONFIG__ = {
+            dispatchToken: '${DISPATCH_TOKEN}',
+            owner: '${OWNER}',
+            repo: '${REPO}',
+            ref: '${REF}'
+          };
+          EOF
+
       - name: Build app
         run: npx ng build --configuration production
 
