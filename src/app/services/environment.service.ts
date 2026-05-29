@@ -9,8 +9,8 @@ import {
 import {
   AdoBuildSummary,
   AdoDeploymentStatus,
-  EnvUserState,
   AdoReleaseSummary,
+  EnvUserState,
 } from '../models/ado.model';
 import { Environment } from '../models/environment.model';
 import { AdoService } from './ado.service';
