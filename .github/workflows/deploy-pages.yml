@@ -64,7 +64,8 @@ jobs:
         run: npx ng build --configuration production
 
       - name: Create env-state.json fallback
-        run: echo '{"generatedAt":null,"latestBuild":null,"userState":{}}' > docs/env-state.json
+        run: |
+          node -e "const fs=require('fs');let userState={};try{userState=JSON.parse(fs.readFileSync('public/env-user-state.json','utf8'));}catch{};fs.writeFileSync('docs/env-state.json',JSON.stringify({generatedAt:new Date().toISOString(),latestBuild:null,userState},null,2));"
 
       - name: Fetch ADO build status
         env:

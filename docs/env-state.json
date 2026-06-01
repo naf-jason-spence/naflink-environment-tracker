@@ -1,5 +1,6 @@
 {
-  "generatedAt": null,
+  "generatedAt": "2026-06-01T20:23:27.450Z",
   "latestBuild": null,
-  "userState": {}
+  "userState": {},
+  "fetchError": "Missing env vars: ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_PIPELINE_NAME"
 }

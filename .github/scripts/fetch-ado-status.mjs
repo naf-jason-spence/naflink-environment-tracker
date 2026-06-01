@@ -25,11 +25,6 @@ const USER_STATE_INPUT = path.join(__dirname, '../../public/env-user-state.json'
 
 const { ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_PIPELINE_NAME } = process.env;
 
-// Always write a fallback file first so GitHub Pages never serves a 404.
-// The real data overwrites this on success.
-fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
-fs.writeFileSync(OUTPUT, JSON.stringify({ generatedAt: null, latestBuild: null, userState: {} }, null, 2));
-
 function loadUserState() {
   try {
     if (!fs.existsSync(USER_STATE_INPUT)) return {};
@@ -40,6 +35,15 @@ function loadUserState() {
     return {};
   }
 }
+
+// Always write a fallback file first so GitHub Pages never serves a 404.
+// The real data overwrites this on success.
+fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
+fs.writeFileSync(OUTPUT, JSON.stringify({
+  generatedAt: new Date().toISOString(),
+  latestBuild: null,
+  userState: loadUserState(),
+}, null, 2));
 
 if (!ADO_PAT || !ADO_ORG || !ADO_PROJECT || !ADO_PIPELINE_NAME) {
   const missing = ['ADO_PAT', 'ADO_ORG', 'ADO_PROJECT', 'ADO_PIPELINE_NAME']
