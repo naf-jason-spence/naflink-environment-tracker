@@ -19,4 +19,5 @@ import { EnvironmentService } from './services/environment.service';
 })
 export class App {
   readonly envService = inject(EnvironmentService);
+  readonly warningMessage: string = 'When marking an environment as done/free or occupied, the app will attempt to trigger a GitHub Actions workflow to sync the change. This may take awhile.';
 }
