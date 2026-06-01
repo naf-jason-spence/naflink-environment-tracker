@@ -7,7 +7,10 @@ import {
   Injectable,
 } from '@angular/core';
 
-import { Observable } from 'rxjs';
+import {
+  defer,
+  Observable,
+} from 'rxjs';
 
 interface DispatchInputs {
   envId: string;
@@ -47,21 +50,23 @@ export class GithubService {
   }
 
   dispatchMarkEnvironment(inputs: DispatchInputs): Observable<void> {
-    const token = this.getToken();
-    const owner = this.runtimeConfig.owner?.trim() || localStorage.getItem(LS_OWNER_KEY)?.trim() || DEFAULT_OWNER;
-    const repo = this.runtimeConfig.repo?.trim() || localStorage.getItem(LS_REPO_KEY)?.trim() || DEFAULT_REPO;
-    const ref = this.runtimeConfig.ref?.trim() || localStorage.getItem(LS_REF_KEY)?.trim() || DEFAULT_REF;
-
-    const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_ID}/dispatches`;
-    const body: WorkflowDispatchRequest = { ref, inputs };
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'Content-Type': 'application/json',
-      'X-GitHub-Api-Version': '2022-11-28',
+    return defer(() => {
+      const token = this.getToken();
+      const owner = this.runtimeConfig.owner?.trim() || localStorage.getItem(LS_OWNER_KEY)?.trim() || DEFAULT_OWNER;
+      const repo = this.runtimeConfig.repo?.trim() || localStorage.getItem(LS_REPO_KEY)?.trim() || DEFAULT_REPO;
+      const ref = this.runtimeConfig.ref?.trim() || localStorage.getItem(LS_REF_KEY)?.trim() || DEFAULT_REF;
+  
+      const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_ID}/dispatches`;
+      const body: WorkflowDispatchRequest = { ref, inputs };
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      });
+  
+      return this.http.post<void>(url, body, { headers });
     });
-
-    return this.http.post<void>(url, body, { headers });
   }
 
   private getToken(): string {

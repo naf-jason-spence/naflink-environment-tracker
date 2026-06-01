@@ -112,3 +112,22 @@
 
 .spin { animation: spin 0.9s linear infinite; }
 
+@media (max-width: 900px) {
+  .header {
+    padding: 0 toRem(14);
+  }
+
+  .header-inner {
+    height: auto;
+    min-height: toRem(64);
+    padding: toRem(8) 0;
+    flex-wrap: wrap;
+    gap: toRem(8);
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
