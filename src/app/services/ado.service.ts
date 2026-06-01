@@ -24,9 +24,15 @@ export class AdoService {
    * under any sub-path (e.g. /naflink-environment-tracker/).
    */
   syncFromJson(): Observable<AdoStatusJson> {
-    const url = `${this.document.baseURI}env-state.json`;
+    const envStateUrl = `${this.document.baseURI}env-state.json`;
+    const legacyUrl = `${this.document.baseURI}ado-status.json`;
+
     return this.http
-      .get<AdoStatusJson>(url)
+      .get<AdoStatusJson>(envStateUrl)
+      .pipe(
+        // Backward compatibility with older deployments that still publish ado-status.json.
+        catchError(() => this.http.get<AdoStatusJson>(legacyUrl)),
+      )
       .pipe(
         catchError(() => of({ generatedAt: null, latestBuild: null, userState: {} })),
       );
