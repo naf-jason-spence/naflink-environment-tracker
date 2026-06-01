@@ -45,7 +45,8 @@ export class EnvironmentService {
 
   readonly environments = signal<Environment[]>(loadFromStorage());
   readonly pendingFreeIds = signal<Set<string>>(new Set());
-  readonly dispatchPending = computed(() => this.pendingFreeIds().size > 0);
+  readonly pendingOccupiedIds = signal<Set<string>>(new Set());
+  readonly dispatchPending = computed(() => this.pendingFreeIds().size > 0 || this.pendingOccupiedIds().size > 0);
   readonly dispatchError = signal<string | null>(null);
   readonly occupiedCount = computed(() => this.environments().filter(e => e.status === 'occupied').length);
   readonly freeCount = computed(() => this.environments().filter(e => e.status === 'free').length);
@@ -87,8 +88,17 @@ export class EnvironmentService {
 
     this.adoService.syncFromJson().subscribe({
       next: (status) => {
-        if (!status.latestBuild && !status.environments && !status.userState) {
-          this.adoError.set('ADO status not yet available — the sync workflow may not have run yet.');
+        const hasEnvData = !!status.environments && Object.keys(status.environments).length > 0;
+        const hasUserState = !!status.userState && Object.keys(status.userState).length > 0;
+
+        if (status.fetchError) {
+          this.adoError.set(status.fetchError);
+        }
+
+        if (!status.latestBuild && !hasEnvData && !hasUserState) {
+          if (!status.fetchError) {
+            this.adoError.set('ADO status not yet available — the sync workflow may not have run yet.');
+          }
           this.adoLoading.set(false);
           return;
         }
@@ -206,8 +216,63 @@ export class EnvironmentService {
     });
   }
 
+  markAsOccupied(envId: string, branchOrRepo: string, deployedBy: string): void {
+    const now = new Date().toISOString();
+    const normalizedBranch = branchOrRepo.trim();
+
+    if (!normalizedBranch) return;
+
+    const actor = this.getCurrentActor();
+    const normalizedDeployedBy = deployedBy.trim() || actor;
+
+    this.dispatchError.set(null);
+    this.clearDispatchErrorTimer();
+
+    this.pendingOccupiedIds.update(prev => {
+      const next = new Set(prev);
+      next.add(envId);
+      return next;
+    });
+
+    this.environments.update(envs =>
+      envs.map(env =>
+        env.id !== envId ? env : {
+          ...env,
+          status:              'occupied' as const,
+          branchOrRepo:        normalizedBranch,
+          lockedBy:            normalizedDeployedBy,
+          freedAt:             null,
+          lastUpdated:         now,
+        }
+      )
+    );
+
+    this.githubService.dispatchMarkEnvironment({
+      envId,
+      action: 'occupied',
+      user: normalizedDeployedBy,
+      notes: '',
+      branchOrRepo: normalizedBranch,
+    }).subscribe({
+      next: () => {
+        this.refreshSoon();
+        this.clearPendingOccupied(envId);
+      },
+      error: (err: unknown) => {
+        this.clearPendingOccupied(envId);
+        const message = this.getDispatchErrorMessage(err);
+        this.dispatchError.set(message);
+        this.scheduleDispatchErrorAutoClear();
+      }
+    });
+  }
+
   isMarkingFree(envId: string): boolean {
     return this.pendingFreeIds().has(envId);
+  }
+
+  isMarkingOccupied(envId: string): boolean {
+    return this.pendingOccupiedIds().has(envId);
   }
 
   private applyAdoBuilds(buildMap: Map<string, AdoBuildSummary>): void {
@@ -264,7 +329,9 @@ export class EnvironmentService {
           ...env,
           branchOrRepo:        release.sourceBranch,
           lockedBy:            release.deployedBy,
-          status:              (release.sourceBranch || release.deployedBy) ? 'occupied' : env.status,
+          status:              (release.sourceBranch || release.deployedBy || release.deploymentStatus === 'succeeded' || release.deploymentStatus === 'inProgress' || release.deploymentStatus === 'partiallySucceeded')
+            ? 'occupied'
+            : env.status,
           freedAt:             null,
           adoReleaseId:        release.releaseId,
           adoReleaseName:      release.releaseName,
@@ -332,6 +399,14 @@ export class EnvironmentService {
 
   private clearPendingFree(envId: string): void {
     this.pendingFreeIds.update(prev => {
+      const next = new Set(prev);
+      next.delete(envId);
+      return next;
+    });
+  }
+
+  private clearPendingOccupied(envId: string): void {
+    this.pendingOccupiedIds.update(prev => {
       const next = new Set(prev);
       next.delete(envId);
       return next;
