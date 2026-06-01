@@ -1,6 +1,10 @@
 <app-header />
 <app-summary-bar />
 <main class="main">
+  <section class="warning-msg">
+    <p>{{ warningMessage }}</p>
+  </section>
+
   <div class="grid">
     @for (env of envService.environments(); track env.id) {
       <app-env-card [env]="env" />
