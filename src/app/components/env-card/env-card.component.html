@@ -17,6 +17,13 @@
         </svg>
         {{ isMarkingFree() ? 'Saving…' : 'Done / Free' }}
       </button>
+    } @else {
+      <div class="free-actions">
+        <button class="btn-cancel" type="button" (click)="cancelOccupiedEdit()" [disabled]="isMarkingOccupied()">Reset</button>
+        <button class="btn-occupy" type="button" (click)="saveOccupied()" [disabled]="!canSaveOccupied()">
+          {{ isMarkingOccupied() ? 'Saving…' : 'Save / Occupy' }}
+        </button>
+      </div>
     }
 
   </div>
@@ -32,7 +39,18 @@
         </svg>
         Branch / Repo
       </label>
-      <span class="field-value mono" [class.field-value--pinned]="!!env().branchOrRepo" [class.field-value--muted]="!env().branchOrRepo">{{ env().branchOrRepo || '—' }}</span>
+      @if (env().status === 'free') {
+        <input
+          class="field-input mono"
+          type="text"
+          placeholder="feature/my-branch or org/repo"
+          [ngModel]="editBranchOrRepo()"
+          (ngModelChange)="editBranchOrRepo.set($event)"
+          [disabled]="isMarkingOccupied()"
+        />
+      } @else {
+        <span class="field-value mono" [class.field-value--pinned]="!!env().branchOrRepo" [class.field-value--muted]="!env().branchOrRepo">{{ env().branchOrRepo || '—' }}</span>
+      }
     </div>
 
     <div class="field-group">
@@ -42,7 +60,18 @@
         </svg>
         Deployed By
       </label>
-      <span class="field-value" [class.field-value--pinned]="!!env().lockedBy" [class.field-value--muted]="!env().lockedBy">{{ env().lockedBy || '—' }}</span>
+      @if (env().status === 'free') {
+        <input
+          class="field-input"
+          type="text"
+          placeholder="Your name"
+          [ngModel]="editDeployedBy()"
+          (ngModelChange)="editDeployedBy.set($event)"
+          [disabled]="isMarkingOccupied()"
+        />
+      } @else {
+        <span class="field-value" [class.field-value--pinned]="!!env().lockedBy" [class.field-value--muted]="!env().lockedBy">{{ env().lockedBy || '—' }}</span>
+      }
     </div>
 
   </div>

@@ -17,6 +17,7 @@ interface DispatchInputs {
   action: 'free' | 'occupied';
   user: string;
   notes: string;
+  branchOrRepo?: string;
 }
 
 interface WorkflowDispatchRequest {

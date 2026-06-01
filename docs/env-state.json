@@ -1,6 +1,5 @@
 {
-  "generatedAt": "2026-06-01T21:14:34.913Z",
+  "generatedAt": null,
   "latestBuild": null,
-  "userState": {},
-  "fetchError": "Missing env vars: ADO_PAT"
+  "userState": {}
 }
