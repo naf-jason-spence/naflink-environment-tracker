@@ -47,7 +47,7 @@ jobs:
           DISPATCH_REPO: ${{ vars.ENVTRACKER_DISPATCH_REPO }}
           DISPATCH_REF: ${{ vars.ENVTRACKER_DISPATCH_REF }}
         run: |
-          OWNER="${DISPATCH_OWNER:-NAF-Tech}"
+          OWNER="${DISPATCH_OWNER:-${GITHUB_REPOSITORY_OWNER}}"
           REPO="${DISPATCH_REPO:-naflink-environment-tracker}"
           REF="${DISPATCH_REF:-develop}"
 
