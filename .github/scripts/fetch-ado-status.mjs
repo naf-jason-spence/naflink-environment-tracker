@@ -23,7 +23,10 @@ const __dirname  = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT     = path.join(__dirname, '../../docs/env-state.json');
 const USER_STATE_INPUT = path.join(__dirname, '../../public/env-user-state.json');
 
-const { ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_PIPELINE_NAME } = process.env;
+const ADO_PAT = process.env.ADO_PAT;
+const ADO_ORG = process.env.ADO_ORG ?? 'NAF-Tech';
+const ADO_PROJECT = process.env.ADO_PROJECT ?? 'LenderLink.Web';
+const ADO_PIPELINE_NAME = process.env.ADO_PIPELINE_NAME ?? 'naflink-web-release-pipeline';
 
 function loadUserState() {
   try {
@@ -45,9 +48,8 @@ fs.writeFileSync(OUTPUT, JSON.stringify({
   userState: loadUserState(),
 }, null, 2));
 
-if (!ADO_PAT || !ADO_ORG || !ADO_PROJECT || !ADO_PIPELINE_NAME) {
-  const missing = ['ADO_PAT', 'ADO_ORG', 'ADO_PROJECT', 'ADO_PIPELINE_NAME']
-    .filter(k => !process.env[k]);
+if (!ADO_PAT) {
+  const missing = ['ADO_PAT'];
   console.error('Missing required env vars:', missing.join(', '));
   fs.writeFileSync(OUTPUT, JSON.stringify({
     generatedAt: new Date().toISOString(),
