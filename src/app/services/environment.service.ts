@@ -57,7 +57,7 @@ export class EnvironmentService {
    */
   readonly isProduction: boolean =
     typeof window !== 'undefined' &&
-    !['localhost', '127.0.0.1'].includes(window.location.hostname);
+    !['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname);
 
   readonly adoLoading = signal(false);
   readonly adoError = signal<string | null>(null);
@@ -374,13 +374,6 @@ export class EnvironmentService {
   }
 
   private getCurrentActor(): string {
-    const key = 'envtracker.actor';
-    const existing = localStorage.getItem(key)?.trim();
-    if (existing) return existing;
-
-    const entered = window.prompt('Enter your name for environment updates:')?.trim();
-    if (!entered) return 'unknown';
-    localStorage.setItem(key, entered);
-    return entered;
+    return 'unknown';
   }
 }

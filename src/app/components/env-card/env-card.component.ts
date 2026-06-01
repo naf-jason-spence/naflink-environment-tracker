@@ -2,8 +2,10 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
+  Signal,
 } from '@angular/core';
 
 import { Environment } from '../../models/environment.model';
@@ -22,9 +24,7 @@ export class EnvCardComponent {
 
   private readonly envService = inject(EnvironmentService);
 
-  isMarkingFree(): boolean {
-    return this.envService.isMarkingFree(this.env().id);
-  }
+  readonly isMarkingFree: Signal<boolean> = computed(() => this.envService.isMarkingFree(this.env().id));
 
   markFree(): void {
     this.envService.markAsFree(this.env().id);
