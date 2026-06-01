@@ -70,6 +70,9 @@ jobs:
       - name: Fetch ADO build status
         env:
           ADO_PAT: ${{ secrets.ADO_PAT }}
+          ADO_ORG: ${{ env.ADO_ORG }}
+          ADO_PROJECT: ${{ env.ADO_PROJECT }}
+          ADO_PIPELINE_NAME: ${{ env.ADO_PIPELINE_NAME }}
         run: node .github/scripts/fetch-ado-status.mjs
         continue-on-error: true   # never block deployment if ADO is unreachable
 
