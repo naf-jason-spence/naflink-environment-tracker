@@ -31,12 +31,24 @@ interface EnvTrackerRuntimeConfig {
   ref?: string;
 }
 
+type DispatchTokenSource = 'runtime-config' | 'local-storage' | 'window-global' | 'missing';
+
+export interface DispatchDebugInfo {
+  owner: string;
+  repo: string;
+  ref: string;
+  workflowId: string;
+  dispatchUrl: string;
+  tokenConfigured: boolean;
+  tokenSource: DispatchTokenSource;
+}
+
 const LS_TOKEN_KEY = 'envtracker.github.token';
 const LS_OWNER_KEY = 'envtracker.github.owner';
 const LS_REPO_KEY = 'envtracker.github.repo';
 const LS_REF_KEY = 'envtracker.github.ref';
 
-const DEFAULT_OWNER = 'NAF-Tech';
+const DEFAULT_OWNER = 'naf-jason-spence';
 const DEFAULT_REPO = 'naflink-environment-tracker';
 const DEFAULT_REF = 'develop';
 const WORKFLOW_ID = 'mark-env.yml';
@@ -52,11 +64,9 @@ export class GithubService {
   dispatchMarkEnvironment(inputs: DispatchInputs): Observable<void> {
     return defer(() => {
       const token = this.getToken();
-      const owner = this.runtimeConfig.owner?.trim() || localStorage.getItem(LS_OWNER_KEY)?.trim() || DEFAULT_OWNER;
-      const repo = this.runtimeConfig.repo?.trim() || localStorage.getItem(LS_REPO_KEY)?.trim() || DEFAULT_REPO;
-      const ref = this.runtimeConfig.ref?.trim() || localStorage.getItem(LS_REF_KEY)?.trim() || DEFAULT_REF;
-  
-      const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_ID}/dispatches`;
+      const { owner, repo, ref } = this.resolveDispatchConfig();
+
+      const url = this.getDispatchUrl(owner, repo);
       const body: WorkflowDispatchRequest = { ref, inputs };
       const headers = new HttpHeaders({
         Authorization: `Bearer ${token}`,
@@ -67,6 +77,42 @@ export class GithubService {
   
       return this.http.post<void>(url, body, { headers });
     });
+  }
+
+  getDispatchDebugInfo(): DispatchDebugInfo {
+    const { owner, repo, ref } = this.resolveDispatchConfig();
+    const tokenSource = this.getTokenSource();
+
+    return {
+      owner,
+      repo,
+      ref,
+      workflowId: WORKFLOW_ID,
+      dispatchUrl: this.getDispatchUrl(owner, repo),
+      tokenConfigured: tokenSource !== 'missing',
+      tokenSource,
+    };
+  }
+
+  private resolveDispatchConfig(): { owner: string; repo: string; ref: string } {
+    return {
+      owner: this.runtimeConfig.owner?.trim() || localStorage.getItem(LS_OWNER_KEY)?.trim() || DEFAULT_OWNER,
+      repo: this.runtimeConfig.repo?.trim() || localStorage.getItem(LS_REPO_KEY)?.trim() || DEFAULT_REPO,
+      ref: this.runtimeConfig.ref?.trim() || localStorage.getItem(LS_REF_KEY)?.trim() || DEFAULT_REF,
+    };
+  }
+
+  private getDispatchUrl(owner: string, repo: string): string {
+    return `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_ID}/dispatches`;
+  }
+
+  private getTokenSource(): DispatchTokenSource {
+    if (this.runtimeConfig.dispatchToken?.trim()) return 'runtime-config';
+    if (localStorage.getItem(LS_TOKEN_KEY)?.trim()) return 'local-storage';
+    if ((window as Window & { __ENVTRACKER_DISPATCH_TOKEN__?: string }).__ENVTRACKER_DISPATCH_TOKEN__?.trim()) {
+      return 'window-global';
+    }
+    return 'missing';
   }
 
   private getToken(): string {
