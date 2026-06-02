@@ -14,5 +14,13 @@
     "notes": "",
     "branchOrRepo": "release/NL-Release-4.8.1",
     "lockedBy": "Divya R"
+  },
+  "uat2": {
+    "status": "free",
+    "freedAt": "2026-06-02T14:02:30.368Z",
+    "freedBy": "unknown",
+    "notes": "",
+    "branchOrRepo": "",
+    "lockedBy": ""
   }
 }
