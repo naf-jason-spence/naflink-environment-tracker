@@ -30,5 +30,13 @@
     "notes": "",
     "branchOrRepo": "",
     "lockedBy": ""
+  },
+  "qa2": {
+    "status": "free",
+    "freedAt": "2026-08-05T19:25:16.108Z",
+    "freedBy": "unknown",
+    "notes": "",
+    "branchOrRepo": "",
+    "lockedBy": ""
   }
 }
